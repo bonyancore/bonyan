@@ -1,4 +1,4 @@
-# Construction Connect
+# Bonyan
 
 Arabic-first construction operating system for contractors (Egypt first, Saudi later).
 
@@ -8,7 +8,7 @@ There is no implementation and no packages yet. Each team fills in its own area.
 ## Repository layout
 
 ```
-construction-connect/
+Bonyan/
 ├── apps/
 │   ├── web/          Next.js: tenant web app + portals (same codebase, restricted routes)
 │   └── mobile/       React Native: site app with offline queue
