@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "appName": "كونستركشن كونكت",
+    "description": "نظام واحد لإدارة دورة حياة المشروع بالكامل."
+  },
+  "nav": {
+    "label": "التنقل الرئيسي",
+    "home": "الرئيسية",
+    "tasks": "مهامي",
+    "procurement": "المشتريات",
+    "site": "الموقع",
+    "money": "المال",
+    "quality": "الجودة",
+    "projects": "المشاريع",
+    "system": "النظام"
+  },
+  "system": {
+    "tabsLabel": "أقسام الوحدة",
+    "roles": "الأدوار",
+    "approvals": "الاعتماد",
+    "automation": "الأتمتة",
+    "masterData": "البيانات الأساسية",
+    "notifications": "الإشعارات",
+    "users": "المستخدمون",
+    "operator": "المشرف"
+  },
+  "topbar": {
+    "project": "المشروع",
+    "searchPlaceholder": "ابحث أو اكتب أمراً…",
+    "searchLabel": "بحث",
+    "code": "الرمز",
+    "date": "التاريخ",
+    "online": "متصل",
+    "offline": "غير متصل"
+  },
+  "locale": {
+    "label": "اللغة",
+    "switchTo": "تغيير اللغة إلى {language}"
+  },
+  "common": {
+    "loading": "جارٍ التحميل…",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "retry": "حاول مرة أخرى",
+    "add": "إضافة",
+    "today": "اليوم",
+    "tomorrow": "غداً",
+    "overdue": "متأخر",
+    "money": "<num>{amount}</num> <cur>{currency}</cur>",
+    "comingSoon": "قريباً",
+    "moneyMillions": "<num>{amount}</num> مليون <cur>{currency}</cur>"
+  },
+  "tasks": {
+    "dueToday": "{count, plural, =0 {لا مهام مستحقة اليوم} one {مهمة واحدة مستحقة اليوم} two {مهمتان مستحقتان اليوم} few {# مهام مستحقة اليوم} many {# مهمة مستحقة اليوم} other {# مهمة مستحقة اليوم}}",
+    "columns": {
+      "todo": "للتنفيذ",
+      "doing": "جاري",
+      "waiting": "بانتظار غيري",
+      "done": "تم اليوم"
+    },
+    "tags": {
+      "procurement": "مشتريات",
+      "receiving": "استلام",
+      "matching": "مطابقة",
+      "draft": "مسودة",
+      "site": "موقع",
+      "rfi": "استفسار",
+      "payment": "مستخلص"
+    },
+    "board": {
+      "label": "لوحة المهام",
+      "empty": "أفلت مهمة هنا",
+      "column": "{column}، {count, plural, zero {لا مهام} one {مهمة واحدة} two {مهمتان} few {# مهام} many {# مهمة} other {# مهمة}}"
+    },
+    "a11y": {
+      "instructions": "اضغط المسافة لرفع المهمة، وحرّكها بالأسهم، وأفلتها بالمسافة، واضغط خروج للإلغاء. اضغط إدخال لفتح تفاصيلها.",
+      "start": "تم رفع {title}",
+      "over": "{title} فوق {column}",
+      "drop": "تم إفلات {title} في {column}",
+      "cancel": "تم الإلغاء، عادت {title} إلى مكانها"
+    },
+    "drawer": {
+      "label": "تفاصيل المهمة",
+      "close": "إغلاق",
+      "status": "الحالة",
+      "assignee": "المسؤول",
+      "due": "الاستحقاق",
+      "progress": "التقدم",
+      "description": "الوصف",
+      "attachments": "المرفقات",
+      "attachmentsEmpty": "لا توجد مرفقات بعد",
+      "attach": "إضافة ملفات",
+      "comments": "التعليقات",
+      "commentsEmpty": "لا توجد تعليقات بعد. ابدأ المحادثة.",
+      "commentPlaceholder": "اكتب تعليقًا…",
+      "send": "إرسال",
+      "justNow": "الآن",
+      "module": "الوحدة",
+      "kb": "{value} ك.ب"
+    },
+    "toolbar": {
+      "filters": "تصفية حسب الوحدة",
+      "views": "العرض",
+      "all": "الكل",
+      "board": "لوحة",
+      "list": "قائمة",
+      "dragOff": "السحب متوقف أثناء التصفية"
+    }
+  },
+  "errors": {
+    "notFoundTitle": "الصفحة غير موجودة",
+    "notFoundBody": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+    "backHome": "العودة إلى الرئيسية"
+  },
+  "currency": {
+    "EGP": "ج.م",
+    "SAR": "ر.س",
+    "USD": "دولار"
+  },
+  "dashboard": {
+    "kpi": {
+      "contract": "قيمة العقد",
+      "progress": "التقدم الكلي",
+      "cash": "الموقف النقدي",
+      "approvals": "بانتظار الاعتماد"
+    },
+    "note": {
+      "variations": "{percent} أوامر تغيير معتمدة",
+      "ahead": "متقدم عن الخطة بـ {points} نقاط",
+      "runway": "{weeks, plural, zero {لا أسابيع} one {يغطي أسبوعًا} two {يغطي أسبوعين} few {يغطي # أسابيع} many {يغطي # أسبوعًا} other {يغطي # أسبوع}} من المصروفات",
+      "overdue": "{count} متأخرة"
+    },
+    "cashFlow": {
+      "title": "التدفق النقدي",
+      "planned": "المخطط",
+      "actual": "الفعلي",
+      "point": "{month}: المخطط {planned}، الفعلي {actual}",
+      "unit": "تراكمي، بالمليون جنيه"
+    },
+    "millions": "{value} مليون",
+    "needsYou": {
+      "title": "يحتاجك اليوم",
+      "all": "افتح مهامي"
+    },
+    "packages": {
+      "title": "التقدم حسب الحزمة",
+      "planned": "المخطط"
+    },
+    "pipeline": {
+      "title": "مسار المشتريات",
+      "requested": "مطلوب",
+      "ordered": "تم الطلب",
+      "delivered": "تم التوريد",
+      "invoiced": "تمت الفوترة"
+    }
+  }
+}
