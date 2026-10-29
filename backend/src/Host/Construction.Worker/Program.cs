@@ -1,5 +1,15 @@
+using Construction.Kernel.Tenancy;
+using Construction.Worker;
+
 var builder = Host.CreateApplicationBuilder(args);
 
-var host = builder.Build();
+builder.Services.AddScoped<ITenantContext, AnonymousTenantContext>(); // TEMP
+builder.Services.AddAppModules(builder.Configuration);
 
-await host.RunAsync();
+await builder.Build().RunAsync();
+
+internal sealed class AnonymousTenantContext : ITenantContext
+{
+    public bool HasTenant => false;
+    public TenantId Current => throw new InvalidOperationException("No tenant in this job.");
+}
