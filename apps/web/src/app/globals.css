@@ -1,0 +1,292 @@
+/* ==========================================================================
+   Bonyan — design tokens + UI setup (Tailwind CSS v4, CSS-first)
+
+   Source of truth: the "Bonyan Design System" canvas (Calm-* boards).
+   Every hex below is copied from those boards so code matches the design 1:1.
+
+   How this file is organised
+     1. Primitives   @theme            raw palette, type scale, radii, shadows
+     2. Semantic     :root + @theme inline   shadcn/ui contract (bg-background, bg-primary ...)
+     3. Utilities    @utility          num, bg-blueprint, page-title
+     4. Base         @layer base       body, focus, RTL-safe defaults
+
+   Rules for the team
+     - Components use SEMANTIC tokens (bg-card, text-muted-foreground, border-border).
+     - Status colours (ok / warn / danger / info / purple) are used directly as
+       bg-ok-100 text-ok-800 etc. They are not part of the shadcn contract.
+     - No tailwind.config.ts. Everything lives here.
+   ========================================================================== */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* --------------------------------------------------------------------------
+   1. PRIMITIVES
+   -------------------------------------------------------------------------- */
+@theme {
+  /* Drop Tailwind's default palette: only our colours exist, so nothing
+     off-brand (blue-500, purple-600...) can sneak into the UI. */
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Ink — navy text + the dark navigation rail */
+  --color-ink-950: #0f1e2d;
+  --color-ink-900: #14202b;
+  --color-ink-700: #4a5865;
+  --color-ink-600: #5a6672;
+  --color-ink-300: #9db0c2;
+
+  /* Sand — warm neutrals: canvas, lines, chips */
+  --color-sand-100: #e9e8e4;
+  --color-sand-200: #e4e2dc;
+  --color-sand-300: #dad8d2;
+  --color-sand-400: #cfcdc6;
+  --color-sand-500: #bdbbb4;
+  --color-hover: #e3e1db;
+  --color-segment: #e0dfda;
+  --color-track: #d8d6d0;
+
+  /* Steel blue — primary */
+  --color-steel-100: #e1eaf3;
+  --color-steel-700: #1f4e79;
+  --color-steel-900: #143757;
+
+  /* Safety amber — the single accent (title bar, logo, active rail marker) */
+  --color-amber-500: #ffc20e;
+
+  /* Status. Pattern: -600/-700 solid, -100 tint, -800/-900 text on tint */
+  --color-ok-600: #2e7d4f;
+  --color-ok-100: #e4efe6;
+  --color-ok-800: #255f3e;
+
+  --color-warn-700: #b45309;
+  --color-warn-100: #f8e7d2;
+  --color-warn-900: #7a3a05;
+
+  --color-danger-700: #b3261e;
+  --color-danger-100: #f6dedb;
+  --color-danger-900: #8a1f18;
+
+  --color-info-700: #0f766e;
+  --color-info-100: #dcefec;
+  --color-info-900: #0b5a54;
+
+  --color-purple-600: #5b5f8f;
+  --color-purple-100: #e6e6ef;
+  --color-purple-800: #3f4270;
+
+  /* Type scale (size / line-height / tracking / weight) */
+  --text-micro: 11px;
+  --text-micro--line-height: 14px;
+  --text-micro--letter-spacing: 0.4px;
+  --text-overline: 12px;
+  --text-overline--line-height: 16px;
+  --text-overline--letter-spacing: 0.6px;
+  --text-caption: 13px;
+  --text-caption--line-height: 20px;
+  --text-ui: 14.5px;
+  --text-ui--line-height: 22px;
+  --text-body: 15px;
+  --text-body--line-height: 24px;
+  --text-h2: 17px;
+  --text-h2--line-height: 26px;
+  --text-h2--font-weight: 600;
+  --text-h1: 30px;
+  --text-h1--line-height: 38px;
+  --text-h1--letter-spacing: -0.4px;
+  --text-h1--font-weight: 600;
+
+  /* Radii — flat, enterprise. Nothing bigger than 8px. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+  --radius-2xl: 8px;
+
+  /* Shadows — hairlines instead of soft blur. Overrides shadcn's xs..xl. */
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 0 1px #cfcdc6;
+  --shadow-md: 0 0 0 1px #cfcdc6, 0 8px 24px rgb(15 30 45 / 0.14);
+  --shadow-lg: 0 0 0 1px #cfcdc6, 0 8px 24px rgb(15 30 45 / 0.14);
+  --shadow-xl: 0 0 0 1px #cfcdc6, 0 8px 24px rgb(15 30 45 / 0.14);
+  --shadow-hair: 0 0 0 1px #cfcdc6;
+  --shadow-hover: 0 0 0 1.5px #1f4e79;
+  --shadow-selected: 0 0 0 2px #1f4e79, 0 8px 20px rgb(15 30 45 / 0.12);
+}
+
+/* --------------------------------------------------------------------------
+   2. SEMANTIC TOKENS (shadcn/ui contract)
+   -------------------------------------------------------------------------- */
+:root {
+  --background: var(--color-sand-100);
+  --foreground: var(--color-ink-900);
+
+  --card: var(--color-white);
+  --card-foreground: var(--color-ink-900);
+  --popover: var(--color-white);
+  --popover-foreground: var(--color-ink-900);
+
+  --primary: var(--color-steel-700);
+  --primary-foreground: var(--color-white);
+  --secondary: var(--color-sand-200);
+  --secondary-foreground: var(--color-ink-700);
+  --muted: var(--color-sand-200);
+  --muted-foreground: var(--color-ink-600);
+  --accent: var(--color-steel-100);
+  --accent-foreground: var(--color-steel-900);
+  --destructive: var(--color-danger-700);
+
+  --border: var(--color-sand-300);
+  --input: var(--color-sand-400);
+  /* The boards use amber for focus, but amber on sand is ~1.4:1 and fails
+     WCAG 2.2 non-text contrast (3:1). Steel blue passes, so the ring is blue. */
+  --ring: var(--color-steel-700);
+
+  /* Charts: validate for colour-blind safety before shipping dashboards */
+  --chart-1: var(--color-steel-700);
+  --chart-2: var(--color-info-700);
+  --chart-3: var(--color-warn-700);
+  --chart-4: var(--color-purple-600);
+  --chart-5: var(--color-ok-600);
+
+  /* Navigation rail (dark) */
+  --sidebar: var(--color-ink-950);
+  --sidebar-foreground: var(--color-ink-300);
+  --sidebar-primary: var(--color-amber-500);
+  --sidebar-primary-foreground: var(--color-ink-950);
+  --sidebar-accent: rgb(255 255 255 / 0.09);
+  --sidebar-accent-foreground: var(--color-white);
+  --sidebar-border: rgb(255 255 255 / 0.1);
+  --sidebar-ring: var(--color-amber-500);
+
+  --radius: 8px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* next/font injects these variables in src/lib/fonts.ts */
+  --font-sans:
+    var(--font-plex-arabic), var(--font-plex-sans), ui-sans-serif, system-ui,
+    sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", monospace;
+}
+
+/* --------------------------------------------------------------------------
+   3. UTILITIES
+   -------------------------------------------------------------------------- */
+
+/* Numbers, codes, money: always LTR inside RTL text, monospaced, tabular. */
+@utility num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: -0.2px;
+}
+
+/* The faint blueprint grid behind app pages (88px). */
+@utility bg-blueprint {
+  background:
+    linear-gradient(rgb(20 32 43 / 0.045) 1px, transparent 1px) 0 0 / 88px 88px,
+    linear-gradient(90deg, rgb(20 32 43 / 0.045) 1px, transparent 1px) 0 0 /
+      88px 88px,
+    var(--background);
+}
+
+/* Page H1 with the amber bar. The bar sits on the reading-start side (RTL-safe). */
+@utility page-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: var(--text-h1);
+  line-height: var(--text-h1--line-height);
+  letter-spacing: var(--text-h1--letter-spacing);
+  font-weight: 600;
+  &::before {
+    content: "";
+    flex: 0 0 6px;
+    width: 6px;
+    height: 26px;
+    border-radius: 1px;
+    background: var(--color-amber-500);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. BASE
+   -------------------------------------------------------------------------- */
+@layer base {
+  /* Tailwind v4 defaults borders to currentColor and buttons to cursor:default. */
+  *,
+  ::before,
+  ::after,
+  ::backdrop {
+    border-color: var(--border);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
