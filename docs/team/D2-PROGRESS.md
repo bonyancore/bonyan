@@ -9,12 +9,12 @@
 ## 0. Resume here (rewrite this block at every checkpoint and before ending a session)
 
 - **REVIEW REQUESTED:** _none_
-- **Current ticket:** _none yet_
-- **Current slice / step:** _n/a_
-- **Last commit:** _n/a_
-- **Exact next action:** _read the Runbook, run the bootstrap (Runbook §1.6), then start queue item 1_
-- **Working branch:** `d2/work` · **Ticket branch:** _n/a_
-- **Last updated:** _date/time_
+- **Current ticket:** PLT-201 Messaging library
+- **Current slice / step:** Bootstrap complete; starting Slice 1 (Envelope, marker, attributes, schema validation)
+- **Last commit:** 3202f8a chore: set BASE_BRANCH=master to match repo default
+- **Exact next action:** Implement Construction.Messaging project and EventEnvelope, IOutbox, IEventHandler, IdempotentConsumer
+- **Working branch:** `d2/work` · **Ticket branch:** `feat/plt-201`
+- **Last updated:** 2026-10-30 21:45
 
 ---
 
@@ -22,28 +22,28 @@
 
 | Purpose | Command |
 |---|---|
-| Build | |
-| Unit + integration tests (fast set) | |
-| Slow tests | |
-| Architecture tests | |
-| Contract tests (events + OpenAPI diff) | |
-| Tenant isolation tests | |
-| Migrations (empty / from previous release) | |
-| Start dependencies (PostgreSQL, MinIO) | |
-| Environment check (Docker available? tests runnable?) | |
+| Build | `dotnet build backend/Construction.sln -warnaserror` |
+| Unit + integration tests (fast set) | `dotnet test backend/Construction.sln --filter "Category!=Slow"` |
+| Slow tests | `dotnet test backend/Construction.sln --filter "Category=Slow"` |
+| Architecture tests | `dotnet test backend/tests/Architecture.Tests` (when test projects added in PLT-211) |
+| Contract tests (events + OpenAPI diff) | `dotnet test backend/tests/Contract.Tests` |
+| Tenant isolation tests | `dotnet test backend/tests/Tenant.Isolation.Tests` |
+| Migrations (empty / from previous release) | `dotnet ef database update --project backend/src/Modules/Platform/Platform.Infrastructure --startup-project backend/src/Host/Construction.Api` |
+| Start dependencies (PostgreSQL, MinIO) | `docker compose up -d` (requires Docker host) |
+| Environment check (Docker available? tests runnable?) | .NET SDK 10.0.401, Python 3.13.7, Git 2.55.0.2; Docker is NOT installed in local environment |
 
 ## 2. Skeleton found in the repo (fill during bootstrap)
 
 | Piece | Exists? | Location / notes |
 |---|---|---|
-| Kernel (Money, IClock, ids) | _expected: yes_ | `backend/src/Shared/Construction.Kernel` |
-| Messaging / Outbox base | _expected: empty (.gitkeep)_ | `backend/src/Shared/Construction.Messaging` |
-| Persistence + RLS + tenant context | _expected: ModuleDbContext, TenantSessionInterceptor_ | `backend/src/Shared/Construction.Persistence` |
-| Web (auth, problem+json, idempotency hook) | _expected: empty_ | `backend/src/Shared/Construction.Web` |
-| Testing helpers (fakes, ApiFactory) | _expected: empty_ | `backend/src/Shared/Construction.Testing` |
-| Architecture.Tests / module template | _expected: empty_ | `backend/tests/Architecture.Tests`, `backend/tools/templates/module` |
-| Job library already used (Hangfire or other) | | |
-| Existing D4 number-series skeleton | | |
+| Kernel (Money, IClock, ids) | Yes | `backend/src/Shared/Construction.Kernel` (Money, IClock, Ids, Result, Error, TenantContext) |
+| Messaging / Outbox base | Empty (.gitkeep) | `backend/src/Shared/Construction.Messaging` (target of PLT-201) |
+| Persistence + RLS + tenant context | Yes | `backend/src/Shared/Construction.Persistence` (ModuleDbContext, TenantSessionInterceptor) |
+| Web (auth, problem+json, idempotency hook) | Empty (.gitkeep) | `backend/src/Shared/Construction.Web` |
+| Testing helpers (fakes, ApiFactory) | Empty (.gitkeep) | `backend/src/Shared/Construction.Testing` |
+| Architecture.Tests / module template | Empty (.gitkeep) | `backend/tests/Architecture.Tests`, template at `backend/tools/templates/module` |
+| Job library already used (Hangfire or other) | None yet | `backend/src/Host/Construction.Worker` minimal skeleton |
+| Existing D4 number-series skeleton | None yet | To be implemented in PLT-206 |
 
 ---
 
@@ -51,7 +51,7 @@
 
 | # | Ticket | Status | Last commit / tag | Tests (pass/total) | Notes |
 |---|---|---|---|---|---|
-| 1 | PLT-201 Messaging library | TODO | | | |
+| 1 | PLT-201 Messaging library | IN_PROGRESS | | | Bootstrap complete; implementing library |
 | 2 | PLT-206 Number series | TODO | | | |
 | 3 | PLT-202 Outbox | TODO | | | |
 | 4 | PLT-203 Worker + job runner | TODO | | | |
@@ -75,30 +75,38 @@
 
 ## 4. Ticket log (copy this block once per ticket when you start it)
 
-### <TICKET-ID> — <title>
+### PLT-201 — Messaging library
 - **Status:** IN_PROGRESS
-- **Branch:** `feat/<id>` · **Start commit:** `<sha>`
+- **Branch:** `feat/plt-201` · **Start commit:** `3202f8a`
 - **Plan (max 8 lines):**
-- **Slices:** [ ] 1 Schema  [ ] 2 Domain  [ ] 3 Application  [ ] 4 Persistence/Integration  [ ] 5 API  [ ] 6 Risk tests  [ ] 7 Docs
-- **Last checkpoint:** _slice N done, next: slice N+1_
+  1. Add `Construction.Messaging` library project referencing only `Construction.Kernel`.
+  2. Implement `EventEnvelope<TPayload>` matching Brief §2.5 schema.
+  3. Implement `IntegrationEvent` marker, `EventTypeAttribute`, `IEventHandler<TEvent>`, `IOutbox` interface.
+  4. Implement `IdempotentConsumer<TEvent>` with tenant propagation from envelope and duplicate suppression via `platform.processed_events`.
+  5. Implement JSON schema loading and validation helpers for event payloads.
+  6. Add unit and integration tests (duplicate skipped, missing tenant rejected, handler failure rollback, architecture reference check).
+- **Slices:** [ ] 1 Types & Envelope  [ ] 2 Idempotent Consumer & Schema Validation  [ ] 3 Tests  [ ] 4 Docs/Progress
+- **Last checkpoint:** _Bootstrap done; starting slice 1_
 - **Definition of Done (tick):**
   - [ ] requirements and recipe steps implemented, nothing extra
-  - [ ] migrations from empty and from previous state; RLS enabled and forced
+  - [ ] migrations from empty and from previous state; RLS enabled and forced (table: `platform.processed_events`)
   - [ ] security S1-S15 satisfied or N/A (list N/A items)
   - [ ] race/guard items implemented and tested
-  - [ ] endpoint matrix E1-E15 covered
+  - [ ] endpoint matrix E1-E15 covered (N/A: library, no endpoints)
   - [ ] risk-tier tests (concurrency, failure injection, property, golden, load smoke)
   - [ ] audit scenarios/expectations added for new endpoints/tables (`audit/api/scenarios.yaml`, `audit/db/expectations.yaml`); `AUDIT_CMD` passes if set
   - [ ] error codes ar/en, OpenAPI snapshot, event schemas + contract tests
   - [ ] architecture, contract, tenant isolation suites green
   - [ ] no skipped / pending tests, no unreferenced TODOs
   - [ ] audit written; no secrets/PII in logs
-  - [ ] merged into `d2/work` and tagged `d2-<ID>-done`
-- **Result:** commit `<sha>`, tag `d2-<ID>-done`, tests `<pass>/<total>`
+  - [ ] merged into `d2/work` and tagged `d2-PLT-201-done`
+- **Result:**
 - **Defaults used (Runbook §6):**
-- **Follow-ups / out of scope noticed:**
+  - Envelope structure matches Brief §2.5 / spec 00 §3.9 (`eventId`, `type`, `occurredAt`, `tenantId`, `projectId`, `actorId`, `correlationId`, `causationId`, `payload`).
+  - Base branch is `master`.
+- **Follow-ups / out of scope noticed:** Outbox dispatcher implementation belongs to PLT-202.
 - **Replace later (only for DONE_WITH_FAKES):**
-- **Hand-off notes (who consumes this and how):**
+- **Hand-off notes (who consumes this and how):** All modules publish events via `IOutbox` and handle events via `IdempotentConsumer<TEvent>`.
 
 ---
 
@@ -126,3 +134,4 @@
 
 | Date | What was completed | Ended at |
 |---|---|---|
+| 2026-10-30 | Bootstrap completed: repo inspected, hooks installed, d2.conf & D2-PROGRESS.md filled, PLT-201 started | PLT-201 bootstrap |
