@@ -7,8 +7,6 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <BuildInParallel>false</BuildInParallel>
-    <MaxNodeCount>1</MaxNodeCount>
     <!-- NU1900: vulnerability-data fetch fails when there is no network (sandbox / CI without outbound) -->
     <NoWarn>$(NoWarn);NU1900</NoWarn>
   </PropertyGroup>
