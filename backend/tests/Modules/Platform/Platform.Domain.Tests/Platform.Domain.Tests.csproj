@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.14" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -19,7 +20,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\src\Shared\Construction.Messaging\Construction.Messaging.csproj" />
     <ProjectReference Include="..\..\..\..\src\Shared\Construction.Kernel\Construction.Kernel.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Shared\Construction.Persistence\Construction.Persistence.csproj" />
     <ProjectReference Include="..\..\..\..\src\Modules\Platform\Platform.Core\Platform.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Modules\Platform\Platform.Infrastructure\Platform.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
