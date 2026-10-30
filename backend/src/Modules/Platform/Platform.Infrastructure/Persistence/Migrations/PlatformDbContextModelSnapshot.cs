@@ -23,6 +23,28 @@ namespace Construction.Platform.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Construction.Platform.Core.Domain.Messaging.ProcessedEvent", b =>
+                {
+                    b.Property<string>("Consumer")
+                        .HasColumnType("text")
+                        .HasColumnName("consumer");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<DateTimeOffset>("ProcessedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Consumer", "EventId")
+                        .HasName("pk_processed_events");
+
+                    b.ToTable("processed_events", "platform");
+                });
+
             modelBuilder.Entity("Construction.Platform.Core.Domain.Tenancy.Tenant", b =>
                 {
                     b.Property<Guid>("Id")

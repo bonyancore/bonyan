@@ -1,4 +1,5 @@
 using Construction.Persistence;
+using Construction.Platform.Core.Domain.Messaging;
 using Construction.Platform.Core.Domain.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,7 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
     public const string Schema = "platform";
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<ProcessedEvent> ProcessedEvents => Set<ProcessedEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
