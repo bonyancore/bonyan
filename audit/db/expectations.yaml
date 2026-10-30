@@ -7,6 +7,7 @@ unique_indexes:                   # idempotency / numbering / one-current-versio
   - {table: cost.cost_entries,        columns: [tenant_id, posting_key]}
   - {table: cost.cost_entries,        columns: [reverses_entry_id]}
   - {table: platform.processed_events, columns: [consumer, event_id]}
+  - {table: platform.outbox,              columns: [id]}
   - {table: platform.idempotency_keys, columns: [tenant_id, user_id, key]}
   - {table: platform.number_series,   columns: [tenant_id, series_code, scope_key]}
   - {table: cost.cost_periods,        columns: [tenant_id, project_id, year, month]}

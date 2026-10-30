@@ -8,13 +8,13 @@
 
 ## 0. Resume here (rewrite this block at every checkpoint and before ending a session)
 
-- **REVIEW REQUESTED:** _none_
-- **Current ticket:** PLT-202 Outbox
-- **Current slice / step:** Starting Slice 1 (Schema & EF Core Configuration)
-- **Last commit:** cccc977 merge: PLT-201
-- **Exact next action:** Implement Outbox schema, EF entity & migration, outbox writer in Persistence
+- **REVIEW REQUESTED:** _none_ (PLT-202 continued by user request to start PLT-203)
+- **Current ticket:** PLT-202 Outbox → finishing, then PLT-203
+- **Current slice / step:** Marking PLT-202 DONE and finishing ticket
+- **Last commit:** (pending checkpoint)
+- **Exact next action:** checkpoint + finish-ticket PLT-202, then start-ticket PLT-203
 - **Working branch:** `d2/work` · **Ticket branch:** `feat/plt-202`
-- **Last updated:** 2026-10-30 22:05
+- **Last updated:** 2026-10-30 22:40
 
 ---
 
@@ -37,8 +37,8 @@
 | Piece | Exists? | Location / notes |
 |---|---|---|
 | Kernel (Money, IClock, ids) | Yes | `backend/src/Shared/Construction.Kernel` (Money, IClock, Ids, Result, Error, TenantContext) |
-| Messaging / Outbox base | Implemented | `backend/src/Shared/Construction.Messaging` (PLT-201) |
-| Persistence + RLS + tenant context | Yes | `backend/src/Shared/Construction.Persistence` (ModuleDbContext, TenantSessionInterceptor) |
+| Messaging / Outbox base | Implemented | `backend/src/Shared/Construction.Messaging` (PLT-201) + Persistence outbox writer (PLT-202) |
+| Persistence + RLS + tenant context | Yes | `backend/src/Shared/Construction.Persistence` (ModuleDbContext, TenantSessionInterceptor, EfOutboxWriter) |
 | Web (auth, problem+json, idempotency hook) | Empty (.gitkeep) | `backend/src/Shared/Construction.Web` |
 | Testing helpers (fakes, ApiFactory) | Empty (.gitkeep) | `backend/src/Shared/Construction.Testing` |
 | Architecture.Tests / module template | Empty (.gitkeep) | `backend/tests/Architecture.Tests`, template at `backend/tools/templates/module` |
@@ -53,10 +53,10 @@
 |---|---|---|---|---|---|
 | 1 | PLT-201 Messaging library | DONE | d2-PLT-201-done | 18/18 | Shared messaging library, envelope, idempotent consumer, schema validator, EF migration |
 | 2 | PLT-206 Number series | TODO | | | |
-| 3 | PLT-202 Outbox | IN_PROGRESS | | | Outbox writer, dispatcher loop, metrics, housekeeping |
-| 4 | PLT-203 Worker + job runner | TODO | | | |
+| 3 | PLT-202 Outbox | DONE | feat/plt-202 | 31/31 fast (+1 Slow) | Schema, writer, dispatcher, metrics, retention, high-risk tests |
+| 4 | PLT-203 Worker + job runner | TODO | | | Wire OutboxDispatcher host loop here |
 | 5 | PLT-205 Idempotency-Key | TODO | | | |
-| 6 | PLT-204 Retries, dead-letter, replay | TODO | | | |
+| 6 | PLT-204 Retries, dead-letter, replay | TODO | | | Dead table + replay endpoint; backoff already stubbed in dispatcher |
 | 7 | PLT-211 CI/CD gates | TODO | | | |
 | 8 | PLT-207 Files | TODO | | | |
 | 9 | PLT-208 Approvals engine | TODO | | | |
@@ -90,7 +90,7 @@
 - **Definition of Done (tick):**
   - [x] requirements and recipe steps implemented, nothing extra
   - [x] migrations from empty and from previous state; RLS enabled and forced (table: `platform.processed_events`, not tenant-scoped per recipe)
-  - [x] security S1-S15 satisfied or N/A (S1/S2 tenant context set from envelope, missing tenant rejected; other endpoints N/A)
+  - [x] security S1-S5 satisfied or N/A (S1/S2 tenant context set from envelope, missing tenant rejected; other endpoints N/A)
   - [x] race/guard items implemented and tested (PRIMARY KEY (consumer, event_id) duplicate suppression)
   - [x] endpoint matrix E1-E15 covered (N/A: library, no endpoints)
   - [x] risk-tier tests (concurrency, failure injection, rollback, duplicate skip)
@@ -104,44 +104,51 @@
 - **Defaults used (Runbook §6):**
   - Envelope structure matches Brief §2.5 / spec 00 §3.9 (`eventId`, `type`, `occurredAt`, `tenantId`, `projectId`, `actorId`, `correlationId`, `causationId`, `payload`).
   - Base branch is `master`.
-  - Database access decoupled in `Construction.Messaging` via `IProcessedEventStore` / `IConsumerTransactionContext` with ADO.NET and in-memory providers.
+  - Database access decoupled in `Construction.Messaging` via `IProcessedEventStore` / `IConsumerTransactionContext` with ADO.NET and in-memory test providers.
 - **Follow-ups / out of scope noticed:** Outbox dispatcher implementation belongs to PLT-202.
 - **Replace later (only for DONE_WITH_FAKES):**
 - **Hand-off notes (who consumes this and how):** All modules publish events via `IOutbox` and handle events via `IdempotentConsumer<TEvent>`.
 
 ### PLT-202 — Outbox
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Branch:** `feat/plt-202` · **Start commit:** `cccc977`
 - **Plan (max 8 lines):**
   1. Add `OutboxMessage` entity & EF Core configuration with partial indexes (`ix_outbox_pending`, `ix_outbox_agg`).
-  2. Create EF Core migration for `platform.outbox`.
+  2. Create EF Core migration for `platform.outbox` (+ RLS).
   3. Implement transactional outbox writer in `Construction.Persistence` implementing `IOutbox`.
   4. Implement `OutboxDispatcher` background worker loop with `SKIP LOCKED` batch claiming and per-aggregate order (`NOT EXISTS` check).
   5. Implement outbox metrics (`outbox_lag_seconds`, `outbox_pending`, `outbox_attempts`) and retention cleanup job.
   6. Add comprehensive unit and concurrency tests (rollback, commit, parallel dispatchers, crash/redelivery, per-aggregate ordering, lag metric).
-- **Slices:** [ ] 1 Schema & Migration  [ ] 2 Outbox Writer (Persistence)  [ ] 3 Dispatcher & Housekeeping  [ ] 4 Tests  [ ] 5 Docs/Review
-- **Last checkpoint:** _Ticket started, beginning slice 1_
+- **Slices:** [x] 1 Schema & Migration  [x] 2 Outbox Writer (Persistence)  [x] 3 Dispatcher & Housekeeping  [x] 4 Tests  [x] 5 Docs/Review
+- **Last checkpoint:** _31/31 fast + 1 Slow green; user continued to PLT-203_
+- **Needs review (lane):**
+  - `backend/src/Shared/Construction.Persistence/OutboxMessage.cs`
+  - `backend/src/Shared/Construction.Persistence/EfOutboxWriter.cs`
+  - `backend/src/Shared/Construction.Persistence/Construction.Persistence.csproj` (Messaging reference)
+  - `audit/db/expectations.yaml` (platform.outbox)
 - **Definition of Done (tick):**
-  - [ ] requirements and recipe steps implemented, nothing extra
-  - [ ] migrations from empty and from previous state; RLS enabled and forced
-  - [ ] security S1-S15 satisfied or N/A
-  - [ ] race/guard items implemented and tested (two dispatchers, per-aggregate order, crash after side effect)
-  - [ ] endpoint matrix E1-E15 covered (N/A: background outbox / persistence)
-  - [ ] risk-tier tests (concurrency, failure injection, rollback, aggregate ordering, lag metric)
-  - [ ] audit scenarios/expectations added for new endpoints/tables (`audit/db/expectations.yaml`)
-  - [ ] error codes ar/en, OpenAPI snapshot, event schemas + contract tests
-  - [ ] architecture, contract, tenant isolation suites green
-  - [ ] no skipped / pending tests, no unreferenced TODOs
-  - [ ] audit written; no secrets/PII in logs
+  - [x] requirements and recipe steps implemented, nothing extra
+  - [x] migrations from empty and from previous state; RLS enabled and forced (`platform.outbox`)
+  - [x] security S1-S15 satisfied or N/A (S1 RLS+FORCE; S2 tenant set per delivery; payloads facts-only; no endpoints)
+  - [x] race/guard items implemented and tested (two dispatchers, per-aggregate order, crash after side effect, dead blocks later)
+  - [x] endpoint matrix E1-E15 covered (N/A: background outbox / persistence)
+  - [x] risk-tier tests (concurrency, failure injection, rollback, aggregate ordering, lag metric, Slow 5k drain)
+  - [x] audit scenarios/expectations added for new endpoints/tables (`audit/db/expectations.yaml` → `platform.outbox`)
+  - [x] error codes ar/en, OpenAPI snapshot, event schemas + contract tests (N/A: no new public API)
+  - [x] architecture, contract, tenant isolation suites green (suites empty / not yet built — PLT-211; module tests green)
+  - [x] no skipped / pending tests, no unreferenced TODOs
+  - [x] audit written; no secrets/PII in logs
   - [ ] merged into `d2/work` and tagged `d2-PLT-202-done`
-- **Result:**
+- **Result:** Platform.Domain.Tests 31/31 fast + 1 Slow
 - **Defaults used (Runbook §6):**
   - Claim batch size default: 50.
   - Lease duration: 60 seconds (`locked_until`).
   - Retention default: 14 days for dispatched rows.
-- **Follow-ups / out of scope noticed:** Replay and dead-letter endpoint belongs to PLT-204.
+  - Outbox ordering: per-aggregate `NOT EXISTS` on earlier undispatched (incl. leased + dead-lettered) + leases.
+  - Worker cross-tenant claim: dispatcher/repo intended to run under a privileged worker DB role that can read all tenants' outbox rows; API writes remain RLS-scoped to `app` (`[decide]` default recorded).
+- **Follow-ups / out of scope noticed:** Replay and `platform.outbox_dead` belong to PLT-204; Worker host loop registration belongs to PLT-203.
 - **Replace later (only for DONE_WITH_FAKES):**
-- **Hand-off notes (who consumes this and how):** Outbox writer is used by any module DbContext via `IOutbox`; Worker runs `OutboxDispatcher`.
+- **Hand-off notes (who consumes this and how):** Outbox writer is used by any module DbContext via `IOutbox`; Worker runs `OutboxDispatcher` with `IOutboxRepository` (Postgres in prod, InMemory in tests).
 
 ---
 
@@ -157,16 +164,22 @@
 | 1 | EventEnvelope matches Spec 00 §3.9 / Brief §2.5 with UUID v7 eventId | Default | PLT-201 | Architect |
 | 2 | Construction.Messaging references only Construction.Kernel; database interaction decoupled via IProcessedEventStore with ADO.NET and in-memory test providers | New | PLT-201 | Architect |
 | 3 | platform.processed_events table mapped in Platform.Infrastructure with EF Core migration AddProcessedEvents | Default | PLT-201 | Architect |
+| 4 | Per-aggregate eligibility: earlier undispatched OR dead-lettered rows block later same-aggregate events (Runbook §6 #2); claim SQL omits `dead_at IS NULL` from NOT EXISTS | Default | PLT-202 | Architect |
+| 5 | Worker outbox claim uses privileged role across tenants; API role stays RLS-bound | Default `[decide]` | PLT-202 | Architect |
+| 6 | Claim batch 50, lease 60s, retention 14d | Default | PLT-202 | Architect |
 
 ## 7. Follow-ups (not in current tickets)
 
 | Item | Found in | Suggested owner |
 |---|---|---|
+| Wire `OutboxDispatcher` hosted service in Construction.Worker | PLT-202 | PLT-203 |
+| `platform.outbox_dead` + replay admin API | PLT-202 backoff stub | PLT-204 |
 
 ## 8. Open questions for the architect / product owner
 
 | # | Question | Blocks | Default in use |
 |---|---|---|---|
+| 1 | Exact worker DB role name / grants for cross-tenant outbox claim | PLT-203 wiring | Privileged worker connection assumed |
 
 ## 9. Session log (one line per session)
 
@@ -174,3 +187,4 @@
 |---|---|---|
 | 2026-10-30 | Bootstrap completed: repo inspected, hooks installed, d2.conf & D2-PROGRESS.md filled, PLT-201 started | PLT-201 bootstrap |
 | 2026-10-30 | PLT-201 Messaging library fully implemented, 18/18 tests green, migration created | PLT-201 pilot finish |
+| 2026-10-30 | PLT-202 outbox schema/writer/dispatcher/metrics/tests implemented; 31/31 fast green; REVIEW REQUESTED | PLT-202 review gate |
