@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Construction.Kernel\Construction.Kernel.csproj" />
+  </ItemGroup>
+
+</Project>

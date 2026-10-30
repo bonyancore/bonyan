@@ -1,0 +1,27 @@
+# Labels come from the "START HERE" page in Notion. Replace with real account names.
+
+/backend/src/Shared/                         @architect
+/backend/src/Host/                           @architect @D2
+/backend/src/Modules/Platform/               @D1 @D2
+/backend/src/Modules/Core/                   @D3
+/backend/src/Modules/Planning/               @D3
+/backend/src/Modules/Reporting/              @D3
+/backend/src/Modules/Procurement/            @D4
+/backend/src/Modules/Docs/                   @D4
+/backend/src/Modules/Intelligence/           @D4
+/backend/src/Modules/Cost/                   @D2
+/backend/src/Modules/Cash/                   @D2
+/backend/src/Modules/Contracts/              @D1
+/backend/src/Integrations/                   @architect
+/backend/services/intelligence/              @ai-engineer-or-architect
+**/*.Contracts/                              @architect
+/contracts/                                  @architect
+/backend/tests/Tenant.Isolation.Tests/       @D1
+/backend/tests/GoldenProject.Tests/          @D3
+/backend/tests/Architecture.Tests/           @architect
+/.github/ /deploy/ /backend/tools/           @D2 @architect
+/docs/adr/ /docs/rfc/                        @architect
+
+# Add owners for the front-end teams
+/apps/web/                                   @web-lead
+/apps/mobile/                                @mobile-lead

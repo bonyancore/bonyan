@@ -1,0 +1,19 @@
+# What the database MUST look like (derived from the Playbook and Recipes). Tables that do not exist yet are reported as
+# "not built yet" (skipped, or FAILED with AUDIT_STRICT=1). Edit to match real table names.
+append_only:                      # no UPDATE/DELETE/TRUNCATE for the app role + a BEFORE trigger that rejects them
+  - cost.cost_entries
+  - platform.audit_log
+unique_indexes:                   # idempotency / numbering / one-current-version guards (partial indexes count)
+  - {table: cost.cost_entries,        columns: [tenant_id, posting_key]}
+  - {table: cost.cost_entries,        columns: [reverses_entry_id]}
+  - {table: platform.processed_events, columns: [consumer, event_id]}
+  - {table: platform.idempotency_keys, columns: [tenant_id, user_id, key]}
+  - {table: platform.number_series,   columns: [tenant_id, series_code, scope_key]}
+  - {table: cost.cost_periods,        columns: [tenant_id, project_id, year, month]}
+  - {table: cost.budgets,             columns: [tenant_id, project_id]}
+allowed_cross_schema_fk_targets:  # the only tables another schema may reference with a real foreign key
+  - core.projects
+  - core.work_packages
+  - core.parties
+  - platform.users
+money_name_regex: "(amount|total|price|cost|rate|budget|value|balance|vat|qty|quantity)"
