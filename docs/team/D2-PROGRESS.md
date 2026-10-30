@@ -8,13 +8,13 @@
 
 ## 0. Resume here (rewrite this block at every checkpoint and before ending a session)
 
-- **REVIEW REQUESTED:** PLT-201 (pilot completed; touches src/Shared/Construction.Messaging, src/Shared/Construction.Kernel, Construction.sln)
-- **Current ticket:** PLT-201 Messaging library
-- **Current slice / step:** All slices completed (1 Types & Envelope, 2 Idempotent Consumer & Schema Validation, 3 Tests, 4 Docs/Progress). Tests: 18/18 passing.
-- **Last commit:** 8c2dffe chore(PLT-201): bootstrap
-- **Exact next action:** Run checkpoint.sh and finish-ticket.sh PLT-201, then STOP for pilot review
-- **Working branch:** `d2/work` · **Ticket branch:** `feat/plt-201`
-- **Last updated:** 2026-10-30 22:00
+- **REVIEW REQUESTED:** _none_
+- **Current ticket:** PLT-202 Outbox
+- **Current slice / step:** Starting Slice 1 (Schema & EF Core Configuration)
+- **Last commit:** cccc977 merge: PLT-201
+- **Exact next action:** Implement Outbox schema, EF entity & migration, outbox writer in Persistence
+- **Working branch:** `d2/work` · **Ticket branch:** `feat/plt-202`
+- **Last updated:** 2026-10-30 22:05
 
 ---
 
@@ -51,9 +51,9 @@
 
 | # | Ticket | Status | Last commit / tag | Tests (pass/total) | Notes |
 |---|---|---|---|---|---|
-| 1 | PLT-201 Messaging library | DONE | | 18/18 | Shared messaging library, envelope, idempotent consumer, schema validator, EF migration |
+| 1 | PLT-201 Messaging library | DONE | d2-PLT-201-done | 18/18 | Shared messaging library, envelope, idempotent consumer, schema validator, EF migration |
 | 2 | PLT-206 Number series | TODO | | | |
-| 3 | PLT-202 Outbox | TODO | | | |
+| 3 | PLT-202 Outbox | IN_PROGRESS | | | Outbox writer, dispatcher loop, metrics, housekeeping |
 | 4 | PLT-203 Worker + job runner | TODO | | | |
 | 5 | PLT-205 Idempotency-Key | TODO | | | |
 | 6 | PLT-204 Retries, dead-letter, replay | TODO | | | |
@@ -108,6 +108,40 @@
 - **Follow-ups / out of scope noticed:** Outbox dispatcher implementation belongs to PLT-202.
 - **Replace later (only for DONE_WITH_FAKES):**
 - **Hand-off notes (who consumes this and how):** All modules publish events via `IOutbox` and handle events via `IdempotentConsumer<TEvent>`.
+
+### PLT-202 — Outbox
+- **Status:** IN_PROGRESS
+- **Branch:** `feat/plt-202` · **Start commit:** `cccc977`
+- **Plan (max 8 lines):**
+  1. Add `OutboxMessage` entity & EF Core configuration with partial indexes (`ix_outbox_pending`, `ix_outbox_agg`).
+  2. Create EF Core migration for `platform.outbox`.
+  3. Implement transactional outbox writer in `Construction.Persistence` implementing `IOutbox`.
+  4. Implement `OutboxDispatcher` background worker loop with `SKIP LOCKED` batch claiming and per-aggregate order (`NOT EXISTS` check).
+  5. Implement outbox metrics (`outbox_lag_seconds`, `outbox_pending`, `outbox_attempts`) and retention cleanup job.
+  6. Add comprehensive unit and concurrency tests (rollback, commit, parallel dispatchers, crash/redelivery, per-aggregate ordering, lag metric).
+- **Slices:** [ ] 1 Schema & Migration  [ ] 2 Outbox Writer (Persistence)  [ ] 3 Dispatcher & Housekeeping  [ ] 4 Tests  [ ] 5 Docs/Review
+- **Last checkpoint:** _Ticket started, beginning slice 1_
+- **Definition of Done (tick):**
+  - [ ] requirements and recipe steps implemented, nothing extra
+  - [ ] migrations from empty and from previous state; RLS enabled and forced
+  - [ ] security S1-S15 satisfied or N/A
+  - [ ] race/guard items implemented and tested (two dispatchers, per-aggregate order, crash after side effect)
+  - [ ] endpoint matrix E1-E15 covered (N/A: background outbox / persistence)
+  - [ ] risk-tier tests (concurrency, failure injection, rollback, aggregate ordering, lag metric)
+  - [ ] audit scenarios/expectations added for new endpoints/tables (`audit/db/expectations.yaml`)
+  - [ ] error codes ar/en, OpenAPI snapshot, event schemas + contract tests
+  - [ ] architecture, contract, tenant isolation suites green
+  - [ ] no skipped / pending tests, no unreferenced TODOs
+  - [ ] audit written; no secrets/PII in logs
+  - [ ] merged into `d2/work` and tagged `d2-PLT-202-done`
+- **Result:**
+- **Defaults used (Runbook §6):**
+  - Claim batch size default: 50.
+  - Lease duration: 60 seconds (`locked_until`).
+  - Retention default: 14 days for dispatched rows.
+- **Follow-ups / out of scope noticed:** Replay and dead-letter endpoint belongs to PLT-204.
+- **Replace later (only for DONE_WITH_FAKES):**
+- **Hand-off notes (who consumes this and how):** Outbox writer is used by any module DbContext via `IOutbox`; Worker runs `OutboxDispatcher`.
 
 ---
 
