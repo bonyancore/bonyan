@@ -125,8 +125,10 @@ public sealed class InMemoryOutboxRepository : IOutboxRepository
     public Task MarkFailedAsync(
         OutboxMessage message,
         int attempts,
+        DateTimeOffset failedAt,
         DateTimeOffset nextAttemptAt,
         bool isDead,
+        string errorClass,
         string lastError,
         string errorCategory,
         CancellationToken cancellationToken = default)
@@ -138,7 +140,7 @@ public sealed class InMemoryOutboxRepository : IOutboxRepository
             {
                 msg.Attempts = attempts;
                 msg.NextAttemptAt = nextAttemptAt;
-                msg.DeadAt = isDead ? DateTimeOffset.UtcNow : null;
+                msg.DeadAt = isDead ? failedAt : null;
                 msg.LockedBy = null;
                 msg.LockedUntil = null;
 
@@ -147,7 +149,8 @@ public sealed class InMemoryOutboxRepository : IOutboxRepository
                     _deadMessages.Add(new DeadOutboxMessageDto(
                         Guid.CreateVersion7(), msg.Id, msg.TenantId, msg.Type, msg.Payload,
                         msg.AggregateType, msg.AggregateId, msg.AggregateVersion, attempts,
-                        lastError, errorCategory, msg.DeadAt!.Value, null, null));
+                        lastError, errorCategory, errorClass, msg.DeadAt!.Value,
+                        "open", null, null, null, null));
                 }
             }
 

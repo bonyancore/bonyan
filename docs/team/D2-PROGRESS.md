@@ -9,16 +9,17 @@
 ## 0. Resume here (rewrite this block at every checkpoint and before ending a session)
 
 - **REVIEW REQUESTED:** PLT-202 (re-status), PLT-203, PLT-204 — all three are **BLOCKED** on the environment, see §5
-- **Current ticket:** PLT-204 — implementation scaffolded, unit-tested; **not provable in this environment**
+- **Current ticket:** PLT-204 — code path complete (retry, dead letter, replay, discard, lag); **no PostgreSQL proof**
 - **Hard blocker (read first):** there is **no PostgreSQL** in this environment (no `psql`, no server on 5432, no
   Docker, `D2_TEST_PG` unset) and **no `docs/specs/00-*`** (see §5). Per the run rules a ticket with database
   behaviour cannot be `DONE` without real-PostgreSQL proofs, and a missing spec 00 is a stop condition.
 - **Exact next action:** a human provides (1) a reachable PostgreSQL with `D2_TEST_PG`, (2) `docs/specs/00-*.md`,
   (3) `docs/team/tests/PLT-203-acceptance-spec.md` + the protected acceptance test files. Then: re-prove PLT-202 on
   real PostgreSQL, finish PLT-203 (real job-run store + advisory lock, 25 acceptance tests), then finish PLT-204.
-- **Working branch:** `d2/work` · **Ticket branches:** `feat/plt-203` (`a388c18`), `feat/plt-204` (`63a6df9`)
-- **Fast set:** build `-warnaserror` clean, `dotnet test --filter "Category!=Slow"` → **48/48** (all DB-free)
-- **Last updated:** 2026-10-31
+- **Working branch:** `feat/plt-204` · **Ticket branches:** `feat/plt-203` (`a388c18`, `56c70f9`), `feat/plt-204` (wip series)
+- **Note on `56c70f9`:** it is the PLT-203 postgres-store fix. It was committed on `feat/plt-204` because that is the checked-out branch, and cherry-picked onto `feat/plt-203` so both branches are self-consistent; merge `feat/plt-203` first.
+- **Fast set:** build `-warnaserror` clean, `dotnet test --filter "Category!=Slow"` → **75/75**; full suite **76/76** (incl. the 5 000-event Slow test). All DB-free.
+- **Last updated:** 2026-11-01
 
 ---
 
@@ -59,9 +60,9 @@
 | 1 | PLT-201 Messaging library | DONE | `d2-PLT-201-done` | 18/18 | Shared library; no database behaviour required |
 | 2 | PLT-202 Outbox | DONE_WITH_FAKES | tag `d2-PLT-202-done` (code) — see §4 | 31 fast + 1 Slow, all **in-memory** | Code complete; **no real-PostgreSQL proof**; required RFC was missing (now written) |
 | 3 | PLT-206 Number series | TODO | | | Not started (out of scope this run) |
-| 4 | PLT-203 Worker + job runner | BLOCKED (environment) | `feat/plt-203` (code committed) | 7 unit tests; **0 of the 25 required acceptance tests exist** | Real `job_runs` store + advisory lock not wired; see §4 |
+| 4 | PLT-203 Worker + job runner | BLOCKED (environment) | `feat/plt-203` + wip | 24 unit tests; **0 of the 25 required acceptance tests exist** | Real `job_runs` store + advisory lock now wired but **unproven**; see §4 |
 | 5 | PLT-205 Idempotency-Key | TODO | | | Deliberately skipped this run |
-| 6 | PLT-204 Retries, dead-letter, replay | BLOCKED (environment) | `feat/plt-204` (wip) | 10 new unit tests green; **all PostgreSQL proofs missing** | See §4 |
+| 6 | PLT-204 Retries, dead-letter, replay | BLOCKED (environment) | `feat/plt-204` (wip) | 21 new unit tests green; **all PostgreSQL proofs missing** | See §4 |
 | 7 | PLT-211 CI/CD gates | TODO | | | |
 | 8 | PLT-207 Files | TODO | | | |
 | 9 | PLT-208 Approvals engine | TODO | | | |
@@ -118,10 +119,10 @@
      `IJobHarness.cs`, `JobRunnerConformanceTests.cs`, `RealJobRunnerConformanceTests.cs`. The run requires
      "all 25 tests pass" by implementing only `JobHarness.cs`; there is nothing to implement against.
   2. `platform.job_runs` persistence and the `pg_try_advisory_lock` semantics cannot be exercised (no PostgreSQL).
-  3. **Production wiring defect found:** `PlatformInfrastructureRegistration.AddPlatformWorkerJobs` registers
-     `IJobRunStore → InMemoryJobRunStore` and `IJobLock → InMemoryJobLock`. `PostgresJobLock` exists but is unused and
-     there is **no Postgres job-run store at all**, so the Worker would never write `platform.job_runs` and the
-     advisory lock would be per-process only (two Worker instances would both run the job).
+  3. ~~Production wiring defect: the Worker registered `InMemoryJobRunStore` / `InMemoryJobLock`, so it never wrote
+     `platform.job_runs` and the advisory lock was per-process only.~~ **Fixed:** `AddPlatformWorkerJobs` now resolves
+     `PostgresJobRunStore` + `PostgresJobLock` by default; the in-memory adapters are opt-in via
+     `Platform:Jobs:Store=InMemory` and are refused unless the host is Development/Test. **Still unproven** (no DB).
 - **Implemented:** Worker host + `AppModules` switches, `IJob`/`JobContext`, queues
   (`critical|default|reports|collectors|ai`), per-tenant enablement, hard timeout via linked token, `platform.job_runs`
   migration + RLS, scheduler loop, outbox dispatch hosted service, ADR-002, `PlatformHeartbeatJob`.
@@ -133,20 +134,32 @@
 - **Needs review (lane):** `backend/src/Host/Construction.Worker/**` (`AppModules.cs`, `Program.cs`,
   `appsettings.json`, `JobSchedulerHostedService.cs`, `OutboxDispatcherHostedService.cs`), `docs/adr/ADR-002-job-runner.md`,
   `audit/db/expectations.yaml`.
-- **Replace later (required):** the in-memory job-run store and lock (see defect 3) and the 25 protected acceptance tests.
+- **Implemented since the correction:** `PostgresJobRunStore` (insert/update/`ExistsForWindow`/tenant-scoped `GetAsync`,
+  all inside a transaction that sets `app.tenant_id` so forced RLS applies), `run_key` + `trigger` columns with the
+  unique `(tenant_id, job, run_key)` window guard (BR-PLT-140), `CronSchedule` (numeric `M H * * *`, tenant time zone,
+  `NotSupportedException` otherwise), `TryRunScheduledAsync` (no row written for every tick), and
+  `JobScheduleTests` (16 cases).
+- **Replace later (required):** the 25 protected acceptance tests; and proving `PostgresJobRunStore` /
+  `PostgresJobLock` / `CronSchedule.WindowStart` on real PostgreSQL — wired, never executed.
 
 ### PLT-204 — Retries, dead-letter, replay
-- **Status:** **BLOCKED (environment + spec missing)** — partial implementation only
-- **Branch:** `feat/plt-204` · **Commit:** `63a6df9` (wip, **not merged, no tag**) · **Tests:** 10 new unit tests (`DeadLetterRetryTests`), 48/48 fast set green
+- **Status:** **BLOCKED (environment + spec missing)** — code complete, no database proof
+- **Branch:** `feat/plt-204` · **Commits:** `63a6df9` (wip) + this run's commit (wip, **not merged, no tag**) · **Tests:**
+  21 new unit tests (`DeadLetterRetryTests`, `DeadLetterStoreContractTests`), 76/76 full suite green
 - **Implemented so far:**
   - Exact backoff schedule `attempt 1 → +10 s, 2 → +1 m, 3 → +5 m, 4 → +30 m, 5 → +2 h`, then `dead_at` on the 5th
     failure (recipe wording; see §8 #4 for the discrepancy with BR-PLT-63).
   - `platform.outbox_dead` table + forced RLS + `(tenant_id, dead_at)` index; dead-letter copy written in the same
     transaction as the failure bookkeeping; category + bounded summary only (no payload, no exception message).
-  - `GET /api/v1/platform/outbox/dead` (keyset pagination, `limit` 1-100) and
-    `POST /api/v1/platform/outbox/dead/{id}/replay` (conditional `UPDATE … WHERE replayed_at IS NULL`, always 200
-    only on the winner, otherwise 409; inserts a fresh outbox row with `attempts = 0`).
-  - Rate limiting (10/min per user) on replay; audit captured as `replayed_by` + `replay_reason` on the dead row.
+  - `GET /api/v1/platform/outbox/dead` (keyset pagination, filters `eventType` + `resolution`, `pageSize` 1-100) and
+    `POST /api/v1/platform/outbox/dead/{id}/replay` (conditional `UPDATE … WHERE resolution = 'open'`, always 200 only
+    on the winner, otherwise 409 `dead_letter_resolved`; inserts a fresh outbox row with `attempts = 0`).
+  - `POST /api/v1/platform/outbox/dead/{id}/discard` (spec 01 §7.5) — note mandatory, enforced by the endpoint *and*
+    by `ck_outbox_dead_discard_note`; and `GET /api/v1/platform/outbox/lag` (`lagSeconds`, `pendingCount`).
+  - Resolution lifecycle `open | replayed | discarded` with `resolved_by` / `resolved_at` / `resolution_note`, plus
+    `error_class` (exception class, never the message) — spec 01 §4.5 columns that the scaffold lacked.
+  - Rate limiting (10/min per user) on replay and discard; audit captured as `resolved_by` + `resolution_note`
+    (`replayed_by`/`replay_reason` kept for the replay-specific record).
   - **Fixed this run:** permission codes. The recipe says `platform.outbox.replay`; spec 01 §10.2 and §12 say
     `platform.outbox.view` (list/get) and `platform.outbox.manage` (replay/discard). The scaffold used the recipe's
     non-existent code; it now uses the spec's.
@@ -187,18 +200,19 @@
 | 7 | Dead-letter on the **5th** failure (recipe wording), so the `+2 h` step is recorded but not waited | Default | PLT-204 | Architect — see §8 #4 |
 | 8 | Replay audit is `replayed_by` + `replay_reason` on the dead row until a real `IAuditWriter` exists | New | PLT-204 | Architect |
 | 9 | Hand-written job runner, no new package (ADR-002) | Default (Runbook §6 #3) | PLT-203 | Architect |
+| 10 | `platform.outbox_dead` gains `resolution` / `resolved_by` / `resolved_at` / `resolution_note` / `error_class`; `resolution_note` carries the who/why for both replay and discard | New (aligns 01 §4.5) | PLT-204 | Architect — §8 #5 |
+| 11 | `IJobRunStore.GetAsync` takes a tenant id: `platform.job_runs` has RLS forced, so a tenantless read silently returns nothing | New | PLT-203 | Architect |
+| 12 | `ListAll()` is a test helper on `InMemoryJobRunStore`, not part of `IJobRunStore` (the Postgres store cannot honestly implement it) | New | PLT-203 | Architect |
 
 ## 7. Follow-ups (not in current tickets)
 
 | Item | Found in | Suggested owner |
 |---|---|---|
-| Postgres `IJobRunStore` + wire `PostgresJobLock` (currently in-memory in production wiring) | PLT-203 | PLT-203 follow-up |
 | `platform.audit_log` writer + audit row on replay (S10) | PLT-204 | PLT-211 |
 | `platform.audit_log` table does not exist yet | PLT-204 | PLT-211 |
 | Dead-letter count metric + alert (`outbox_dead`) | PLT-204 | PLT-211 (observability) |
-| `POST /outbox/dead/{id}/discard` (spec 01 §12, needs `resolution_note`) | PLT-204 | PLT-204 follow-up |
 | Test-only dead-letter seeder `POST /test/outbox/dead` required by `audit/api/scenarios.yaml` | PLT-204 | PLT-211 |
-| `platform.outbox_dead` column set differs from spec 01 §4.5 (`resolution`, `error_class`, `stack_trace`, `resolved_*` missing) | PLT-204 | Architect decision (§8 #5) |
+| `platform.outbox_dead` still lacks `stack_trace` and uses scaffold names (`original_event_id`/`type`/`last_error` instead of `outbox_id`/`event_type`/`error_message`); `first_failed_at`/`last_failed_at` are not tracked | PLT-204 | Architect decision (§8 #5) |
 | Retention of `outbox_dead` (BR-PLT-66: resolved + 1 year) | PLT-204 | PLT-204 follow-up |
 | `processed_events` 30-day purge job | PLT-202/204 | PLT-204 follow-up |
 
@@ -210,7 +224,7 @@
 | 2 | Exact worker DB role name / grants for cross-tenant outbox claim | PLT-202/204 proof | RFC 0001 (`cc_outbox_dispatcher`) |
 | 3 | Spec 01 §4.5 fans out per consumer (`outbox_subscriptions` + `outbox_deliveries`); the recipe implements one dispatch state per row. Which is authoritative? | PLT-202 contract, PLT-204 retries | recipe (single state) |
 | 4 | Dead-letter after the **5th** failure (recipe/prompt) or after the 5 retries are exhausted, i.e. the 6th (BR-PLT-63 "10 s, 1 m, 5 m, 30 m, 2 h, then outbox_dead")? | PLT-204 schedule test | 5th (recipe) |
-| 5 | `platform.outbox_dead` shape: spec has `resolution`/`error_class`/`stack_trace`/`resolved_*`; the scaffold has `replayed_at`/`replayed_by`/`replay_reason` + aggregate columns | PLT-204 schema | scaffold (recipe columns + aggregate) |
+| 5 | `platform.outbox_dead` shape: `resolution`/`resolved_*`/`error_class` are now added, but the scaffold keeps `original_event_id`/`type`/`last_error`, adds aggregate columns and has no `stack_trace`/`first_failed_at`/`last_failed_at`. Rename to the spec's names or keep the scaffold's? | PLT-204 schema | scaffold names + spec columns |
 | 6 | Tenant rule for the dead-letter list: tenant-scoped RLS (current) or an explicitly cross-tenant operator view (spec 01 §12 mentions `platform_operator`)? | PLT-204 cross-tenant semantics | tenant-scoped |
 
 ## 9. Session log
@@ -221,3 +235,4 @@
 | 2026-10-30 | PLT-202 outbox schema/writer/dispatcher/metrics; 31 fast + 1 Slow (in-memory) | PLT-202 tagged |
 | 2026-10-30 | PLT-203 worker host, job runner, job_runs migration, 7 unit tests | PLT-203 implementation |
 | 2026-10-31 | Audit of the above: found no PostgreSQL, no spec 00, no PLT-203 acceptance package, in-memory production wiring; re-statused PLT-202/203; added PLT-204 unit tests, RFC 0001, audit scenarios, permission fix; committed 203 and 204-wip | BLOCKED — awaiting environment + specs |
+| 2026-11-01 | Finished the in-flight Postgres job wiring (run store, advisory lock, `run_key`/`trigger`, `CronSchedule`, 16 schedule tests) and the dead-letter resolution model (`error_class`, `resolution`, discard endpoint, lag endpoint, 11 contract tests); fixed the RLS-blind `JobRunStore.GetAsync`; 76/76 green, still **zero PostgreSQL proofs** | BLOCKED — awaiting environment + specs |

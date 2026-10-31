@@ -18,8 +18,10 @@ public interface IOutboxRepository
     Task MarkFailedAsync(
         OutboxMessage message,
         int attempts,
+        DateTimeOffset failedAt,
         DateTimeOffset nextAttemptAt,
         bool isDead,
+        string errorClass,
         string lastError,
         string errorCategory,
         CancellationToken cancellationToken = default);

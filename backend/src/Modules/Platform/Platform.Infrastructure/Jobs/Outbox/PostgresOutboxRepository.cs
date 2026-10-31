@@ -119,8 +119,10 @@ public sealed class PostgresOutboxRepository : IOutboxRepository
     public async Task MarkFailedAsync(
         OutboxMessage message,
         int attempts,
+        DateTimeOffset failedAt,
         DateTimeOffset nextAttemptAt,
         bool isDead,
+        string errorClass,
         string lastError,
         string errorCategory,
         CancellationToken cancellationToken = default)
@@ -177,7 +179,7 @@ public sealed class PostgresOutboxRepository : IOutboxRepository
 
         var pDead = cmd.CreateParameter();
         pDead.ParameterName = "deadAt";
-        pDead.Value = isDead ? (object)DateTimeOffset.UtcNow : DBNull.Value;
+        pDead.Value = isDead ? (object)failedAt : DBNull.Value;
         cmd.Parameters.Add(pDead);
 
         var affected = await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -194,9 +196,11 @@ public sealed class PostgresOutboxRepository : IOutboxRepository
             dead.CommandText = $@"
                 INSERT INTO platform.outbox_dead
                     (id, original_event_id, tenant_id, type, payload, aggregate_type, aggregate_id,
-                     aggregate_version, attempts, last_error, last_error_category, dead_at)
+                     aggregate_version, attempts, last_error, last_error_category, error_class,
+                     resolution, dead_at)
                 SELECT @deadId, id, tenant_id, type, payload, aggregate_type, aggregate_id,
-                       aggregate_version, attempts, @lastError, @errorCategory, dead_at
+                       aggregate_version, attempts, @lastError, @errorCategory, @errorClass,
+                       'open', dead_at
                 FROM {_tableName}
                 WHERE id = @id AND tenant_id = @tenantId
                 ON CONFLICT (original_event_id) DO NOTHING;";
@@ -206,6 +210,7 @@ public sealed class PostgresOutboxRepository : IOutboxRepository
             AddParameter(dead, "tenantId", message.TenantId);
             AddParameter(dead, "lastError", lastError);
             AddParameter(dead, "errorCategory", errorCategory);
+            AddParameter(dead, "errorClass", errorClass);
             await dead.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 

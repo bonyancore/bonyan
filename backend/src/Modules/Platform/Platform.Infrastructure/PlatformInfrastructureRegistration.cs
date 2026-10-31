@@ -4,6 +4,7 @@ using Construction.Kernel;
 using Construction.Kernel.Tenancy;
 using Construction.Messaging;
 using Construction.Persistence;
+using Construction.Platform.Infrastructure.Application;
 using Construction.Platform.Infrastructure.Jobs.Outbox;
 using Construction.Platform.Infrastructure.Jobs.Runner;
 using Construction.Platform.Core.Application.Outbox;
@@ -22,7 +23,11 @@ public static class PlatformInfrastructureRegistration
     {
         services.AddScoped<TenantSessionInterceptor>();
 
-        services.AddScoped<IDeadLetterStore, Construction.Platform.Infrastructure.Application.DeadLetterService>();
+        // One implementation backs both the dead-letter admin endpoints and the lag metric, so the
+        // tenant-scoped RLS transaction is written once.
+        services.AddScoped<DeadLetterService>();
+        services.AddScoped<IDeadLetterStore>(sp => sp.GetRequiredService<DeadLetterService>());
+        services.AddScoped<IOutboxMetricsStore>(sp => sp.GetRequiredService<DeadLetterService>());
 
         services.AddDbContext<PlatformDbContext>((sp, o) => o
             .UseNpgsql(

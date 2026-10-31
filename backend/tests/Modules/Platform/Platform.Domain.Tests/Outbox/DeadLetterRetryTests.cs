@@ -138,6 +138,8 @@ public sealed class DeadLetterRetryTests
         Assert.Equal(after.Id, dead.OriginalEventId);
         Assert.Equal(5, dead.Attempts);
         Assert.Equal("application", dead.LastErrorCategory);
+        Assert.Equal("InvalidOperationException", dead.ErrorClass);
+        Assert.Equal("open", dead.Resolution);
         Assert.Null(dead.ReplayedAt);
         Assert.DoesNotContain("never-in-the-dead-row", dead.LastError, StringComparison.Ordinal);
         Assert.DoesNotContain("handler blew up", dead.LastError, StringComparison.Ordinal);
@@ -196,18 +198,23 @@ public sealed class DeadLetterRetryTests
     {
         var leaked = JsonSerializer.Serialize(new { secret = "client payload" });
 
-        var (networkCategory, networkSummary) =
+        var (networkCategory, networkClass, networkSummary) =
             DeadLettering.Summarise(new HttpRequestException(leaked));
-        var (serializationCategory, _) =
+        var (serializationCategory, serializationClass, _) =
             DeadLettering.Summarise(new JsonException(leaked));
-        var (applicationCategory, applicationSummary) =
+        var (applicationCategory, applicationClass, applicationSummary) =
             DeadLettering.Summarise(new InvalidOperationException(leaked));
-        var (timeoutCategory, _) = DeadLettering.Summarise(new TimeoutException(leaked));
+        var (timeoutCategory, _, _) = DeadLettering.Summarise(new TimeoutException(leaked));
 
         Assert.Equal("network", networkCategory);
         Assert.Equal("serialization", serializationCategory);
         Assert.Equal("application", applicationCategory);
         Assert.Equal("network", timeoutCategory);
+
+        // Spec 01 §4.5 error_class: the exception class, never the message.
+        Assert.Equal("HttpRequestException", networkClass);
+        Assert.Equal("JsonException", serializationClass);
+        Assert.Equal("InvalidOperationException", applicationClass);
 
         foreach (var summary in new[] { networkSummary, applicationSummary })
         {

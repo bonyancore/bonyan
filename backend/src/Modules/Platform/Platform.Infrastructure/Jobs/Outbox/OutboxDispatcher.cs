@@ -74,14 +74,17 @@ public sealed class OutboxDispatcher
                 // Failure: calculate next attempt according to backoff schedule
                 var nextAttempt = message.Attempts + 1;
                 var (nextDelay, isDead) = CalculateBackoff(nextAttempt);
-                var nextAttemptAt = _clock.UtcNow.Add(nextDelay);
-                var (category, summary) = DeadLettering.Summarise(exception);
+                var failedAt = _clock.UtcNow;
+                var nextAttemptAt = failedAt.Add(nextDelay);
+                var (category, errorClass, summary) = DeadLettering.Summarise(exception);
 
                 await _repository.MarkFailedAsync(
                     message,
                     nextAttempt,
+                    failedAt,
                     nextAttemptAt,
                     isDead,
+                    errorClass,
                     summary,
                     category,
                     cancellationToken).ConfigureAwait(false);

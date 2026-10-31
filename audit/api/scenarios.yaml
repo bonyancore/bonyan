@@ -29,6 +29,25 @@ scenarios:
     parallel: 6
     expect_success: 1
 
+  - name: outbox-dead-double-discard        # spec 01 §7.5: two discards => exactly one wins, the other is 409
+    type: single_winner                     # conditional UPDATE ... WHERE resolution = 'open'
+    create: {path: /test/outbox/dead, body: {type: "test.order.placed.v1"}, id_from: id}
+    action: {method: POST, path: "/api/v1/platform/outbox/dead/{id}/discard", body: {note: "audit discard race"}}
+    parallel: 6
+    expect_success: 1
+
+  - name: outbox-dead-discard-needs-note    # S8/BR-PLT-63: a discard without a note is rejected and changes nothing
+    type: validation
+    create: {path: /test/outbox/dead, body: {type: "test.order.placed.v1"}, id_from: id}
+    action: {method: POST, path: "/api/v1/platform/outbox/dead/{id}/discard", body: {note: "   "}}
+    expect_status: 400
+    then: {method: GET, path: "/api/v1/platform/outbox/dead/{id}", expect_field: {resolution: open}}
+
+  - name: outbox-lag-cross-tenant            # S1/S4: the lag metric never counts another tenant's backlog
+    type: cross_tenant
+    create: {path: /test/outbox/dead, body: {type: "test.order.placed.v1"}}
+    read:   {path: /api/v1/platform/outbox/lag, expect_field: {pendingCount: 0}}
+
   - name: outbox-dead-replay-mass-assignment   # S5: server-owned fields are never bound from the body
     type: mass_assignment
     create: {path: /test/outbox/dead, body: {type: "test.order.placed.v1"}}
