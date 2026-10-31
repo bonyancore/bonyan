@@ -1,10 +1,12 @@
 using Construction.Api;
+using Construction.Api.Tenancy;
 using Construction.Kernel.Tenancy;
 using Microsoft.AspNetCore.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped<ITenantContext, AnonymousTenantContext>(); // TEMP until the "tid" claim reader exists
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantContext, ClaimsPrincipalTenantContext>();
 builder.Services.AddAppModules(builder.Configuration);
 
 builder.Services.AddOpenApi(options =>
@@ -38,9 +40,3 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
 app.MapAppModules();
 
 await app.RunAsync();
-
-internal sealed class AnonymousTenantContext : ITenantContext
-{
-    public bool HasTenant => false;
-    public TenantId Current => throw new InvalidOperationException("No tenant in this request.");
-}

@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Construction.Api;
 
-internal static class AppModules
+public static class AppModules
 {
     public static IServiceCollection AddAppModules(this IServiceCollection services, IConfiguration config)
     {
