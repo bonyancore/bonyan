@@ -10,7 +10,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Modules\Platform\Platform.Module\Platform.Module.csproj" />
+    <ProjectReference Include="..\..\Modules\Platform\Platform.Api\Platform.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Platform\Platform.Infrastructure\Platform.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
