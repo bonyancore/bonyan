@@ -3,13 +3,15 @@ using Construction.Worker;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddScoped<ITenantContext, AnonymousTenantContext>(); // TEMP
-builder.Services.AddAppModules(builder.Configuration);
+// Ambient tenant is set per job by JobRunner; default fails closed.
+builder.Services.AddSingleton<AsyncLocalTenantContext>();
+builder.Services.AddSingleton<ITenantContext>(sp => sp.GetRequiredService<AsyncLocalTenantContext>());
+builder.Services.AddSingleton<ITenantSetter>(sp => sp.GetRequiredService<AsyncLocalTenantContext>());
+
+// Test adapters (in-memory job storage) are refused outside Development/Test.
+builder.Services.AddAppModules(
+    builder.Configuration,
+    allowInMemoryStores: builder.Environment.IsDevelopment()
+        || builder.Environment.IsEnvironment("Test"));
 
 await builder.Build().RunAsync();
-
-internal sealed class AnonymousTenantContext : ITenantContext
-{
-    public bool HasTenant => false;
-    public TenantId Current => throw new InvalidOperationException("No tenant in this job.");
-}
