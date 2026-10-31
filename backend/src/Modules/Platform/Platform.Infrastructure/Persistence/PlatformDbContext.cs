@@ -1,11 +1,14 @@
+using Construction.Kernel.Tenancy;
 using Construction.Persistence;
 using Construction.Platform.Core.Domain.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
 namespace Construction.Platform.Infrastructure.Persistence;
 
-public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> options)
-    : ModuleDbContext(options, Schema)
+public sealed class PlatformDbContext(
+    DbContextOptions<PlatformDbContext> options,
+    ITenantContext tenantContext)
+    : ModuleDbContext(options, Schema, tenantContext)
 {
     public const string Schema = "platform";
 
