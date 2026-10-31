@@ -1,0 +1,45 @@
+# Copy to scenarios.yaml and adapt paths/bodies to the real API. Templates: {i} = counter, {uuid} = random uuid, {id} = created id.
+# Every scenario type below maps to a requirement in the Brief/Playbook. A type with no scenario is reported as NOT verified.
+scenarios:
+  - name: budget-cross-tenant           # S1/S4 tenant isolation (needs AUDIT_TOKEN_ADMIN_B)
+    type: cross_tenant
+    create: {path: /api/v1/cost/budgets, body: {name: "iso {i} {uuid}"}, id_from: id}
+    read:   {path: "/api/v1/cost/budgets/{id}"}
+    mutate: {method: PATCH, path: "/api/v1/cost/budgets/{id}", headers: {If-Match: "*"}, body: {name: "hijack"}}
+
+  - name: budget-idempotency            # PLT-205
+    type: idempotency
+    create: {path: /api/v1/cost/budgets, body: {name: "idem {i}"}, id_from: id}
+
+  - name: budget-mass-assignment        # S5
+    type: mass_assignment
+    create: {path: /api/v1/cost/budgets, body: {name: "mass {i}"}}
+    inject: {status: approved, id: "00000000-0000-0000-0000-000000000001", tenantId: "00000000-0000-0000-0000-000000000002"}
+    forbid_equal: [status, id]
+
+  - name: budget-etag                   # optimistic concurrency
+    type: etag
+    create: {path: /api/v1/cost/budgets, body: {name: "etag {i}"}, id_from: id}
+    read:   {path: "/api/v1/cost/budgets/{id}"}
+    patch:  {path: "/api/v1/cost/budgets/{id}", body: {name: "renamed {i}"}}
+
+  - name: budget-numbers-under-load     # PLT-206 via any create endpoint that returns a business number
+    type: concurrency_create
+    create: {path: /api/v1/cost/budgets, body: {name: "num {i}"}}
+    unique_field: number
+    count: 30
+    gapless: false
+
+  - name: budget-single-approval        # PLT-208 / state machines
+    type: single_winner
+    create: {path: /api/v1/cost/budgets, body: {name: "win {i}"}, id_from: id}
+    action: {method: POST, path: "/api/v1/cost/budgets/{id}/approve"}
+    parallel: 6
+    expect_success: 1
+
+  - name: budget-page-cap               # scalability: page size cap
+    type: pagination_cap
+    create: {path: /api/v1/cost/budgets, body: {name: "page {i}"}}
+    list:   {path: /api/v1/cost/budgets}
+    seed_count: 210
+    max_page: 200

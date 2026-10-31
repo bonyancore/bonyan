@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Enforces the D2 lane only on D2 branches, so other developers are not affected.
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo)"
+if [[ "$branch" =~ ^(d2/|feat/(plt|cst|csh)-[0-9]{3}) ]]; then
+  root="$(git rev-parse --show-toplevel)"
+  bash "$root/scripts/d2/check-lane.sh" staged || exit 1
+fi
+exit 0
