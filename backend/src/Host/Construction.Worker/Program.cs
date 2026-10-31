@@ -3,13 +3,11 @@ using Construction.Worker;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddScoped<ITenantContext, AnonymousTenantContext>(); // TEMP
+// Ambient tenant is set per job by JobRunner; default fails closed.
+builder.Services.AddSingleton<AsyncLocalTenantContext>();
+builder.Services.AddSingleton<ITenantContext>(sp => sp.GetRequiredService<AsyncLocalTenantContext>());
+builder.Services.AddSingleton<ITenantSetter>(sp => sp.GetRequiredService<AsyncLocalTenantContext>());
+
 builder.Services.AddAppModules(builder.Configuration);
 
 await builder.Build().RunAsync();
-
-internal sealed class AnonymousTenantContext : ITenantContext
-{
-    public bool HasTenant => false;
-    public TenantId Current => throw new InvalidOperationException("No tenant in this job.");
-}
