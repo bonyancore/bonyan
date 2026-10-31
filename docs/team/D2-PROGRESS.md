@@ -16,8 +16,8 @@
 - **Exact next action:** a human provides (1) a reachable PostgreSQL with `D2_TEST_PG`, (2) `docs/specs/00-*.md`,
   (3) `docs/team/tests/PLT-203-acceptance-spec.md` + the protected acceptance test files. Then: re-prove PLT-202 on
   real PostgreSQL, finish PLT-203 (real job-run store + advisory lock, 25 acceptance tests), then finish PLT-204.
-- **Working branch:** `feat/plt-204` · **Ticket branches:** `feat/plt-203` (`a388c18`, `56c70f9`), `feat/plt-204` (wip series)
-- **Note on `56c70f9`:** it is the PLT-203 postgres-store fix. It was committed on `feat/plt-204` because that is the checked-out branch, and cherry-picked onto `feat/plt-203` so both branches are self-consistent; merge `feat/plt-203` first.
+- **Working branch:** `feat/plt-204` · **Ticket branches:** `feat/plt-203` (`a388c18`, `6e41c95`), `feat/plt-204` (`56c70f9` = same PLT-203 fix, `82b5ea9` = PLT-204)
+- **Note on the duplicate PLT-203 fix:** `56c70f9` (on `feat/plt-204`) and `6e41c95` (on `feat/plt-203`) carry the same change; the latter omits the dead-letter registration line, which does not exist on that branch. Merge `feat/plt-203` first.
 - **Fast set:** build `-warnaserror` clean, `dotnet test --filter "Category!=Slow"` → **75/75**; full suite **76/76** (incl. the 5 000-event Slow test). All DB-free.
 - **Last updated:** 2026-11-01
 
