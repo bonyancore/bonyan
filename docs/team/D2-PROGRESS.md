@@ -16,7 +16,8 @@
 - **Exact next action:** a human provides (1) a reachable PostgreSQL with `D2_TEST_PG`, (2) `docs/specs/00-*.md`,
   (3) `docs/team/tests/PLT-203-acceptance-spec.md` + the protected acceptance test files. Then: re-prove PLT-202 on
   real PostgreSQL, finish PLT-203 (real job-run store + advisory lock, 25 acceptance tests), then finish PLT-204.
-- **Working branch:** `d2/work` · **Ticket branches:** `feat/plt-203` (code committed), `feat/plt-204` (wip)
+- **Working branch:** `d2/work` · **Ticket branches:** `feat/plt-203` (`a388c18`), `feat/plt-204` (`63a6df9`)
+- **Fast set:** build `-warnaserror` clean, `dotnet test --filter "Category!=Slow"` → **48/48** (all DB-free)
 - **Last updated:** 2026-10-31
 
 ---
@@ -111,7 +112,7 @@
 
 ### PLT-203 — Worker host and job runner
 - **Status:** **BLOCKED (environment)** (was recorded `DONE`; corrected 2026-10-31)
-- **Branch:** `feat/plt-203` · **Tests:** 7 unit tests green (`JobRunnerTests`); **required package absent**
+- **Branch:** `feat/plt-203` · **Commit:** `a388c18` (verified: that commit alone builds `-warnaserror` and passes 38/38) · **Tests:** 7 unit tests green (`JobRunnerTests`); **required package absent**
 - **Why blocked:**
   1. The required acceptance package does not exist in the repo: `docs/team/tests/PLT-203-acceptance-spec.md`,
      `IJobHarness.cs`, `JobRunnerConformanceTests.cs`, `RealJobRunnerConformanceTests.cs`. The run requires
@@ -136,7 +137,7 @@
 
 ### PLT-204 — Retries, dead-letter, replay
 - **Status:** **BLOCKED (environment + spec missing)** — partial implementation only
-- **Branch:** `feat/plt-204` (wip commit) · **Tests:** 10 new unit tests (`DeadLetterRetryTests`), 48/48 fast set green
+- **Branch:** `feat/plt-204` · **Commit:** `63a6df9` (wip, **not merged, no tag**) · **Tests:** 10 new unit tests (`DeadLetterRetryTests`), 48/48 fast set green
 - **Implemented so far:**
   - Exact backoff schedule `attempt 1 → +10 s, 2 → +1 m, 3 → +5 m, 4 → +30 m, 5 → +2 h`, then `dead_at` on the 5th
     failure (recipe wording; see §8 #4 for the discrepancy with BR-PLT-63).
