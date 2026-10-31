@@ -6,6 +6,7 @@ using Construction.Messaging;
 using Construction.Persistence;
 using Construction.Platform.Infrastructure.Jobs.Outbox;
 using Construction.Platform.Infrastructure.Jobs.Runner;
+using Construction.Platform.Core.Application.Outbox;
 using Construction.Platform.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +21,7 @@ public static class PlatformInfrastructureRegistration
         this IServiceCollection services, IConfiguration config)
     {
         services.AddScoped<TenantSessionInterceptor>();
+        services.AddScoped<IDeadLetterStore, Construction.Platform.Infrastructure.Application.DeadLetterService>();
 
         services.AddDbContext<PlatformDbContext>((sp, o) => o
             .UseNpgsql(

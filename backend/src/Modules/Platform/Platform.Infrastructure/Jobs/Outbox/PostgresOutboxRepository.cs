@@ -117,10 +117,12 @@ public sealed class PostgresOutboxRepository : IOutboxRepository
     }
 
     public async Task MarkFailedAsync(
-        Guid messageId,
+        OutboxMessage message,
         int attempts,
         DateTimeOffset nextAttemptAt,
         bool isDead,
+        string lastError,
+        string errorCategory,
         CancellationToken cancellationToken = default)
     {
         await using var connection = await _connectionFactory(cancellationToken).ConfigureAwait(false);
@@ -129,7 +131,21 @@ public sealed class PostgresOutboxRepository : IOutboxRepository
             await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+
+        await using (var setTenant = connection.CreateCommand())
+        {
+            setTenant.Transaction = transaction;
+            setTenant.CommandText = "SELECT set_config('app.tenant_id', @tenantId, true);";
+            var tenantParameter = setTenant.CreateParameter();
+            tenantParameter.ParameterName = "tenantId";
+            tenantParameter.Value = message.TenantId.ToString();
+            setTenant.Parameters.Add(tenantParameter);
+            await setTenant.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         await using var cmd = connection.CreateCommand();
+        cmd.Transaction = transaction;
         cmd.CommandText = $@"
             UPDATE {_tableName}
             SET attempts = @attempts,
@@ -137,12 +153,17 @@ public sealed class PostgresOutboxRepository : IOutboxRepository
                 dead_at = @deadAt,
                 locked_by = NULL,
                 locked_until = NULL
-            WHERE id = @id;";
+            WHERE id = @id AND tenant_id = @tenantId;";
 
         var pId = cmd.CreateParameter();
         pId.ParameterName = "id";
-        pId.Value = messageId;
+        pId.Value = message.Id;
         cmd.Parameters.Add(pId);
+
+        var pTenantId = cmd.CreateParameter();
+        pTenantId.ParameterName = "tenantId";
+        pTenantId.Value = message.TenantId;
+        cmd.Parameters.Add(pTenantId);
 
         var pAtt = cmd.CreateParameter();
         pAtt.ParameterName = "attempts";
@@ -159,7 +180,36 @@ public sealed class PostgresOutboxRepository : IOutboxRepository
         pDead.Value = isDead ? (object)DateTimeOffset.UtcNow : DBNull.Value;
         cmd.Parameters.Add(pDead);
 
-        await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        var affected = await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        if (affected == 0)
+        {
+            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (isDead)
+        {
+            await using var dead = connection.CreateCommand();
+            dead.Transaction = transaction;
+            dead.CommandText = $@"
+                INSERT INTO platform.outbox_dead
+                    (id, original_event_id, tenant_id, type, payload, aggregate_type, aggregate_id,
+                     aggregate_version, attempts, last_error, last_error_category, dead_at)
+                SELECT @deadId, id, tenant_id, type, payload, aggregate_type, aggregate_id,
+                       aggregate_version, attempts, @lastError, @errorCategory, dead_at
+                FROM {_tableName}
+                WHERE id = @id AND tenant_id = @tenantId
+                ON CONFLICT (original_event_id) DO NOTHING;";
+
+            AddParameter(dead, "deadId", Guid.CreateVersion7());
+            AddParameter(dead, "id", message.Id);
+            AddParameter(dead, "tenantId", message.TenantId);
+            AddParameter(dead, "lastError", lastError);
+            AddParameter(dead, "errorCategory", errorCategory);
+            await dead.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<OutboxMetrics> GetMetricsAsync(CancellationToken cancellationToken = default)
@@ -244,5 +294,12 @@ public sealed class PostgresOutboxRepository : IOutboxRepository
             DispatchedAt = reader.IsDBNull(reader.GetOrdinal("dispatched_at")) ? null : reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("dispatched_at")),
             DeadAt = reader.IsDBNull(reader.GetOrdinal("dead_at")) ? null : reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("dead_at"))
         };
+    }
+
+    private static Npgsql.NpgsqlParameter AddParameter(DbCommand command, string name, object value)
+    {
+        var parameter = new Npgsql.NpgsqlParameter { ParameterName = name, Value = value };
+        command.Parameters.Add(parameter);
+        return parameter;
     }
 }

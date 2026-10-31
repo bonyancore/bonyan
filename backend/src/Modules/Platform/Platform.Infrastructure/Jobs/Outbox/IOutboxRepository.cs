@@ -16,10 +16,12 @@ public interface IOutboxRepository
         CancellationToken cancellationToken = default);
 
     Task MarkFailedAsync(
-        Guid messageId,
+        OutboxMessage message,
         int attempts,
         DateTimeOffset nextAttemptAt,
         bool isDead,
+        string lastError,
+        string errorCategory,
         CancellationToken cancellationToken = default);
 
     Task<OutboxMetrics> GetMetricsAsync(CancellationToken cancellationToken = default);

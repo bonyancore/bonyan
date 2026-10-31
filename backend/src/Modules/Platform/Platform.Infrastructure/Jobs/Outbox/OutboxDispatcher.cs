@@ -1,4 +1,5 @@
 using Construction.Kernel.Tenancy;
+using Construction.Kernel;
 using Construction.Persistence;
 
 namespace Construction.Platform.Infrastructure.Jobs.Outbox;
@@ -18,17 +19,20 @@ public sealed class OutboxDispatcher
     private readonly ITenantSetter _tenantSetter;
     private readonly OutboxMessageDeliveryHandler _deliveryHandler;
     private readonly string _workerId;
+    private readonly IClock _clock;
 
     public OutboxDispatcher(
         IOutboxRepository repository,
         ITenantSetter tenantSetter,
         OutboxMessageDeliveryHandler deliveryHandler,
-        string? workerId = null)
+        string? workerId = null,
+        IClock? clock = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _tenantSetter = tenantSetter ?? throw new ArgumentNullException(nameof(tenantSetter));
         _deliveryHandler = deliveryHandler ?? throw new ArgumentNullException(nameof(deliveryHandler));
         _workerId = workerId ?? $"worker-{Guid.NewGuid():N}";
+        _clock = clock ?? new SystemClock();
     }
 
     /// <summary>
@@ -63,16 +67,24 @@ public sealed class OutboxDispatcher
                 await _deliveryHandler(message, cancellationToken).ConfigureAwait(false);
 
                 // Success: mark dispatched
-                await _repository.MarkDispatchedAsync(message.Id, DateTimeOffset.UtcNow, cancellationToken).ConfigureAwait(false);
+                await _repository.MarkDispatchedAsync(message.Id, _clock.UtcNow, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
             {
                 // Failure: calculate next attempt according to backoff schedule
                 var nextAttempt = message.Attempts + 1;
                 var (nextDelay, isDead) = CalculateBackoff(nextAttempt);
-                var nextAttemptAt = DateTimeOffset.UtcNow.Add(nextDelay);
+                var nextAttemptAt = _clock.UtcNow.Add(nextDelay);
+                var (category, summary) = DeadLettering.Summarise(exception);
 
-                await _repository.MarkFailedAsync(message.Id, nextAttempt, nextAttemptAt, isDead, cancellationToken).ConfigureAwait(false);
+                await _repository.MarkFailedAsync(
+                    message,
+                    nextAttempt,
+                    nextAttemptAt,
+                    isDead,
+                    summary,
+                    category,
+                    cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -96,8 +108,8 @@ public sealed class OutboxDispatcher
             2 => (TimeSpan.FromMinutes(1), false),
             3 => (TimeSpan.FromMinutes(5), false),
             4 => (TimeSpan.FromMinutes(30), false),
-            5 => (TimeSpan.FromHours(2), false),
-            _ => (TimeSpan.FromHours(2), true) // 6th or later is dead
+            5 => (TimeSpan.FromHours(2), true),
+            _ => (TimeSpan.FromHours(2), true)
         };
     }
 }

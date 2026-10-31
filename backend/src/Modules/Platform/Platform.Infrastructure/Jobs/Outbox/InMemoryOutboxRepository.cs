@@ -1,4 +1,5 @@
 using Construction.Persistence;
+using Construction.Platform.Core.Application.Outbox;
 
 namespace Construction.Platform.Infrastructure.Jobs.Outbox;
 
@@ -9,6 +10,7 @@ namespace Construction.Platform.Infrastructure.Jobs.Outbox;
 public sealed class InMemoryOutboxRepository : IOutboxRepository
 {
     private readonly List<OutboxMessage> _messages = new();
+    private readonly List<DeadOutboxMessageDto> _deadMessages = new();
     private readonly object _lock = new();
 
     public void Add(OutboxMessage message)
@@ -32,6 +34,14 @@ public sealed class InMemoryOutboxRepository : IOutboxRepository
         lock (_lock)
         {
             return _messages.ToList();
+        }
+    }
+
+    public IReadOnlyList<DeadOutboxMessageDto> GetDeadMessages()
+    {
+        lock (_lock)
+        {
+            return _deadMessages.ToList();
         }
     }
 
@@ -113,15 +123,17 @@ public sealed class InMemoryOutboxRepository : IOutboxRepository
     }
 
     public Task MarkFailedAsync(
-        Guid messageId,
+        OutboxMessage message,
         int attempts,
         DateTimeOffset nextAttemptAt,
         bool isDead,
+        string lastError,
+        string errorCategory,
         CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
-            var msg = _messages.FirstOrDefault(m => m.Id == messageId);
+            var msg = _messages.FirstOrDefault(m => m.Id == message.Id);
             if (msg != null)
             {
                 msg.Attempts = attempts;
@@ -129,6 +141,14 @@ public sealed class InMemoryOutboxRepository : IOutboxRepository
                 msg.DeadAt = isDead ? DateTimeOffset.UtcNow : null;
                 msg.LockedBy = null;
                 msg.LockedUntil = null;
+
+                if (isDead && _deadMessages.All(x => x.OriginalEventId != msg.Id))
+                {
+                    _deadMessages.Add(new DeadOutboxMessageDto(
+                        Guid.CreateVersion7(), msg.Id, msg.TenantId, msg.Type, msg.Payload,
+                        msg.AggregateType, msg.AggregateId, msg.AggregateVersion, attempts,
+                        lastError, errorCategory, msg.DeadAt!.Value, null, null));
+                }
             }
 
             return Task.CompletedTask;
