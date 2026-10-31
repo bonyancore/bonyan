@@ -63,8 +63,18 @@ public sealed class JobSchedulerHostedService(
                 cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
-                    await runner.RunAsync(job, new TenantId(tenantId), tz, cancellationToken)
+                    // Cron is evaluated in the tenant's time zone; a window runs at most once.
+                    await runner.TryRunScheduledAsync(job, new TenantId(tenantId), tz, cancellationToken)
                         .ConfigureAwait(false);
+                }
+                catch (NotSupportedException ex)
+                {
+                    // Only "M H * * *" is supported; a bad expression must not kill the tick.
+                    logger.LogError(
+                        ex,
+                        "Job {Job} has an unsupported cron expression {Cron}",
+                        job.JobName,
+                        job.Cron);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {

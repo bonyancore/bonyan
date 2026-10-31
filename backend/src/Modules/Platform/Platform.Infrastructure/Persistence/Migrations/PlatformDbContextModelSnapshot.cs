@@ -53,6 +53,11 @@ namespace Construction.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("queue");
 
+                    b.Property<string>("RunKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("run_key");
+
                     b.Property<DateTimeOffset>("StartedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("started_at");
@@ -66,11 +71,20 @@ namespace Construction.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
 
+                    b.Property<string>("Trigger")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("trigger");
+
                     b.HasKey("Id")
                         .HasName("pk_job_runs");
 
                     b.HasIndex("TenantId", "Job", "StartedAt")
                         .HasDatabaseName("ix_job_runs_tenant_job_started");
+
+                    b.HasIndex("TenantId", "Job", "RunKey")
+                        .IsUnique()
+                        .HasDatabaseName("uq_job_runs_tenant_job_run_key");
 
                     b.ToTable("job_runs", "platform");
                 });

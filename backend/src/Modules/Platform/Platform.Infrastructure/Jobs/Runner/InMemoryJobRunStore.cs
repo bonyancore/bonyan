@@ -2,19 +2,27 @@ using Construction.Platform.Core.Domain.Jobs;
 
 namespace Construction.Platform.Infrastructure.Jobs.Runner;
 
+/// <summary>In-memory job-run store: unit tests and explicitly-enabled development mode only.</summary>
 public sealed class InMemoryJobRunStore : IJobRunStore
 {
     private readonly List<JobRun> _runs = new();
     private readonly object _lock = new();
 
-    public Task InsertAsync(JobRun run, CancellationToken cancellationToken = default)
+    public Task<bool> TryInsertAsync(JobRun run, CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
-            _runs.Add(run);
-        }
+            if (_runs.Any(r =>
+                    r.TenantId == run.TenantId &&
+                    string.Equals(r.Job, run.Job, StringComparison.Ordinal) &&
+                    string.Equals(r.RunKey, run.RunKey, StringComparison.Ordinal)))
+            {
+                return Task.FromResult(false);
+            }
 
-        return Task.CompletedTask;
+            _runs.Add(run);
+            return Task.FromResult(true);
+        }
     }
 
     public Task UpdateAsync(JobRun run, CancellationToken cancellationToken = default)
@@ -31,11 +39,26 @@ public sealed class InMemoryJobRunStore : IJobRunStore
         return Task.CompletedTask;
     }
 
-    public Task<JobRun?> GetAsync(Guid id, CancellationToken cancellationToken = default)
+    public Task<JobRun?> GetAsync(Guid tenantId, Guid id, CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
-            return Task.FromResult(_runs.FirstOrDefault(r => r.Id == id));
+            return Task.FromResult(_runs.FirstOrDefault(r => r.Id == id && r.TenantId == tenantId));
+        }
+    }
+
+    public Task<bool> ExistsForWindowAsync(
+        Guid tenantId,
+        string job,
+        string runKey,
+        CancellationToken cancellationToken = default)
+    {
+        lock (_lock)
+        {
+            return Task.FromResult(_runs.Any(r =>
+                r.TenantId == tenantId &&
+                string.Equals(r.Job, job, StringComparison.Ordinal) &&
+                string.Equals(r.RunKey, runKey, StringComparison.Ordinal)));
         }
     }
 

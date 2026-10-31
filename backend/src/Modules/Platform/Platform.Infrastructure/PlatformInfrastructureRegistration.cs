@@ -21,6 +21,7 @@ public static class PlatformInfrastructureRegistration
         this IServiceCollection services, IConfiguration config)
     {
         services.AddScoped<TenantSessionInterceptor>();
+
         services.AddScoped<IDeadLetterStore, Construction.Platform.Infrastructure.Application.DeadLetterService>();
 
         services.AddDbContext<PlatformDbContext>((sp, o) => o
@@ -57,22 +58,59 @@ public static class PlatformInfrastructureRegistration
     /// Only call from Worker when Modules:Platform is enabled.
     /// </summary>
     public static IServiceCollection AddPlatformWorkerJobs(
-        this IServiceCollection services, IConfiguration config)
+        this IServiceCollection services, IConfiguration config, bool allowInMemoryStores = false)
     {
         var moduleOptions = BindModuleOptions(config);
         services.AddSingleton(moduleOptions);
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<ITenantJobEnablement>(
             _ => new DictionaryTenantJobEnablement());
-        services.AddSingleton<IJobRunStore, InMemoryJobRunStore>();
-        services.AddSingleton<IJobLock, InMemoryJobLock>();
         services.AddSingleton<IJob, PlatformHeartbeatJob>();
+
+        // Production default is PostgreSQL. The in-memory adapters exist for tests and for an
+        // explicitly-enabled development run, and are refused outside Development/Test (§8.5).
+        var useInMemory = UseInMemoryAdapter(config, "Platform:Jobs:Store", allowInMemoryStores);
+        services.AddSingleton<IJobRunStore>(_ => useInMemory
+            ? new InMemoryJobRunStore()
+            : new PostgresJobRunStore(JobConnectionFactory(config)));
+        services.AddSingleton<IJobLock>(_ => useInMemory
+            ? new InMemoryJobLock()
+            : new PostgresJobLock(JobConnectionFactory(config)));
+
         services.AddSingleton(sp => new JobCatalog(
             sp.GetServices<IJob>(),
             sp.GetRequiredService<ModuleJobOptions>()));
         services.AddSingleton<JobRunner>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Chooses a test adapter only when the configuration explicitly asks for it; refusing in
+    /// production stops an in-memory store from silently replacing database persistence.
+    /// </summary>
+    private static bool UseInMemoryAdapter(IConfiguration config, string key, bool allowInMemory)
+    {
+        if (!string.Equals(config[key], "InMemory", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!allowInMemory)
+        {
+            throw new InvalidOperationException(
+                $"'{key}=InMemory' is only allowed in Development or Test; refusing in this environment.");
+        }
+
+        return true;
+    }
+
+    private static Func<CancellationToken, Task<DbConnection>> JobConnectionFactory(IConfiguration config)
+    {
+        var connectionString = config.GetConnectionString("Default")
+            ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
+
+        return _ => Task.FromResult<DbConnection>(new NpgsqlConnection(connectionString));
     }
 
     public static ModuleJobOptions BindModuleOptions(IConfiguration config)
