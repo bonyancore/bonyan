@@ -9,6 +9,8 @@ unique_indexes:                   # idempotency / numbering / one-current-versio
   - {table: platform.processed_events, columns: [consumer, event_id]}
   - {table: platform.outbox,              columns: [id]}
   - {table: platform.job_runs,            columns: [id]}
+  - {table: platform.job_runs,            columns: [tenant_id, job, run_key]}   # one run per schedule window (BR-PLT-140)
+  - {table: platform.outbox_dead,         columns: [original_event_id]}       # one dead row per event
   - {table: platform.idempotency_keys, columns: [tenant_id, user_id, key]}
   - {table: platform.number_series,   columns: [tenant_id, series_code, scope_key]}
   - {table: cost.cost_periods,        columns: [tenant_id, project_id, year, month]}

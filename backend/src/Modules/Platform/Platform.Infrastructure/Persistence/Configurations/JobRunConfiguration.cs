@@ -14,6 +14,8 @@ public sealed class JobRunConfiguration : IEntityTypeConfiguration<JobRun>
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(x => x.Job).HasColumnName("job").IsRequired();
+        builder.Property(x => x.RunKey).HasColumnName("run_key").IsRequired();
+        builder.Property(x => x.Trigger).HasColumnName("trigger").IsRequired();
         builder.Property(x => x.Queue).HasColumnName("queue").IsRequired();
         builder.Property(x => x.StartedAt).HasColumnName("started_at").HasColumnType("timestamp with time zone").IsRequired();
         builder.Property(x => x.FinishedAt).HasColumnName("finished_at").HasColumnType("timestamp with time zone");
@@ -23,5 +25,10 @@ public sealed class JobRunConfiguration : IEntityTypeConfiguration<JobRun>
 
         builder.HasIndex(x => new { x.TenantId, x.Job, x.StartedAt })
             .HasDatabaseName("ix_job_runs_tenant_job_started");
+
+        // BR-PLT-140: a second enqueue of the same window is a no-op.
+        builder.HasIndex(x => new { x.TenantId, x.Job, x.RunKey })
+            .HasDatabaseName("uq_job_runs_tenant_job_run_key")
+            .IsUnique();
     }
 }

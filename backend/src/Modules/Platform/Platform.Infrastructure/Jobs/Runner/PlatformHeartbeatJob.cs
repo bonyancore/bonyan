@@ -7,7 +7,9 @@ public sealed class PlatformHeartbeatJob : IJob
     public string JobName => "platform.heartbeat";
     public string Queue => JobQueues.Default;
     public TimeSpan Timeout => TimeSpan.FromSeconds(30);
-    public string? Cron => "*/5 * * * *";
+
+    /// <summary>03:00 local time, daily. Only the numeric <c>"M H * * *"</c> form is supported.</summary>
+    public string? Cron => "0 3 * * *";
 
     public Task RunAsync(JobContext context, CancellationToken cancellationToken)
     {
