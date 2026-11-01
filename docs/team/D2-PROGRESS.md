@@ -21,6 +21,40 @@
 - **Fast set:** build `-warnaserror` clean, `dotnet test --filter "Category!=Slow"` → **75/75**; full suite **76/76** (incl. the 5 000-event Slow test). All DB-free.
 - **Last updated:** 2026-11-01
 
+### 0.1 Host-level defects found and fixed (2026-11-01, "PLT-204 is not working")
+
+The PLT-204 code was correct but **unreachable**: the API host could not start at all, and once it did every
+admin endpoint failed the authorization challenge. Both are now fixed and verified live.
+
+| # | Symptom | Cause | Fix |
+|---|---|---|---|
+| 1 | `Unhandled exception … Unable to resolve service for type 'Construction.Kernel.IClock' while attempting to activate 'DeadLetterService'` — the **whole API died on startup** (so `/health` was down too) | `IClock` was registered only in `AddPlatformWorkerJobs()` (Worker path), but `DeadLetterService` is registered in `AddPlatformInfrastructure()` (API path) | `TryAddSingleton<IClock>(…)` added to `AddPlatformInfrastructure`; the Worker registration uses `TryAdd` too, so exactly one descriptor exists on both paths |
+| 2 | Every `/api/v1/platform/outbox/*` route returned **500** `Unable to find the required 'IAuthenticationService' service` | No authentication scheme is registered anywhere in the repo, so `RequireAuthorization` could not challenge | `DevHeaderAuthenticationHandler` (`Construction.Api`): Development reads `X-Dev-UserId` / `X-Dev-TenantId` / `X-Dev-Permissions`; **any other environment authenticates nobody and fails closed with 401**. `UseAuthentication()` added before `UseAuthorization()` |
+| 3 | Dead-letter workflow could not be exercised locally (no database ⇒ every call hit Npgsql) | `InMemoryDeadLetterStore` documents itself as *"for tests and for an explicitly-enabled development run … never registered in Production"* but was wired nowhere | Registered in the Development block of `Program.cs`, mirroring the existing `IProcessedEventStore` swap. The PostgreSQL `DeadLetterService` remains the production default |
+
+**Live verification (Development, no database, `curl`)**
+
+| Case | Expected | Observed |
+|---|---|---|
+| `GET /health` | 200 | 200 |
+| `GET /dead` no identity | 401 | **401** |
+| `GET /dead` identity, no permission | 403 | **403** |
+| `GET /dead` + `platform.outbox.view` | 200 + empty keyset page | **200** `{"items":[],"hasMore":false,…}` |
+| `GET /lag` + `platform.outbox.view` | 200 | **200** `{"lagSeconds":0,"pendingCount":0}` |
+| `POST /dead/{id}/replay` unknown id + `manage` | 404 | **404** |
+| `POST …/replay` + `view` only | 403 | **403** |
+| `POST …/replay` + `manage`, blank reason | 400 | **400** |
+
+Build `-warnaserror` clean; suite still **76/76**. The 200/409 replay-and-double-replay flow is covered by
+`DeadLetterStoreContractTests` (in-memory) — still **not** proven on PostgreSQL, see §5.
+
+**Lane note (review-flagged files touched):** `backend/src/Host/Construction.Api/Program.cs`,
+`backend/src/Host/Construction.Api/PlatformAuthentication.cs` (new). Module change: one line in
+`backend/src/Modules/Platform/Platform.Infrastructure/PlatformInfrastructureRegistration.cs`.
+
+**Replace later:** `DevHeaderAuthenticationHandler` must be deleted and replaced by the real bearer-token scheme
+when the authentication ticket lands; it is Development-only and refuses to authenticate anywhere else.
+
 ---
 
 ## 1. Commands discovered

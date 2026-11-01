@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Construction.Api;
 using Construction.Kernel.Tenancy;
 using Construction.Messaging;
+using Construction.Platform.Core.Application.Outbox;
+using Construction.Platform.Infrastructure.Application;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -26,11 +28,27 @@ builder.Services.AddScoped<TestConsumer>();
 // Register application modules
 builder.Services.AddAppModules(builder.Configuration);
 
+// Authorization-protected endpoints need a scheme to challenge with; without one every
+// RequireAuthorization endpoint throws instead of returning 401/403. The handler only authenticates
+// in Development and fails closed otherwise until the real bearer scheme (auth ticket) lands.
+builder.Services.AddAuthentication(DevHeaderAuthenticationHandler.SchemeName)
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, DevHeaderAuthenticationHandler>(
+        DevHeaderAuthenticationHandler.SchemeName,
+        _ => { });
+
 // Use InMemory store only in Development
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.RemoveAll<IProcessedEventStore>();
     builder.Services.AddSingleton<IProcessedEventStore, InMemoryProcessedEventStore>();
+
+    // Same Development-only rule for the dead-letter admin store (PLT-204): the PostgreSQL store stays
+    // the production default, while a local run can exercise list/replay/discard/409 without a database.
+    builder.Services.RemoveAll<IDeadLetterStore>();
+    builder.Services.RemoveAll<IOutboxMetricsStore>();
+    builder.Services.AddSingleton<InMemoryDeadLetterStore>();
+    builder.Services.AddSingleton<IDeadLetterStore>(sp => sp.GetRequiredService<InMemoryDeadLetterStore>());
+    builder.Services.AddSingleton<IOutboxMetricsStore>(sp => sp.GetRequiredService<InMemoryDeadLetterStore>());
 }
 
 // OpenAPI configuration
@@ -50,6 +68,7 @@ builder.Services.AddOpenApi(options =>
 var app = builder.Build();
 
 app.UseRateLimiter();
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Development endpoints

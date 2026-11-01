@@ -12,6 +12,7 @@ using Construction.Platform.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
 
 namespace Construction.Platform.Infrastructure;
@@ -22,6 +23,11 @@ public static class PlatformInfrastructureRegistration
         this IServiceCollection services, IConfiguration config)
     {
         services.AddScoped<TenantSessionInterceptor>();
+
+        // Time comes from the shared kernel clock, never DateTime.UtcNow. Registered here because the
+        // dead-letter admin service and the outbox dispatcher both resolve it on the API path; the
+        // Worker path (AddPlatformWorkerJobs) adds the same service, so TryAdd keeps one descriptor.
+        services.TryAddSingleton<IClock>(_ => new SystemClock(TimeProvider.System));
 
         // One implementation backs both the dead-letter admin endpoints and the lag metric, so the
         // tenant-scoped RLS transaction is written once.
@@ -67,7 +73,7 @@ public static class PlatformInfrastructureRegistration
     {
         var moduleOptions = BindModuleOptions(config);
         services.AddSingleton(moduleOptions);
-        services.AddSingleton<IClock, SystemClock>();
+        services.TryAddSingleton<IClock>(_ => new SystemClock(TimeProvider.System));
         services.AddSingleton<ITenantJobEnablement>(
             _ => new DictionaryTenantJobEnablement());
         services.AddSingleton<IJob, PlatformHeartbeatJob>();
