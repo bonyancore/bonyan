@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bonyan.dev/schemas/procurement.purchase-order-modified.v1.json",
+  "title": "PurchaseOrderModifiedV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "tenantId", "purchaseOrderId", "purchaseOrderNumber", "revision", "supplierId", "projectId", "totalAmount", "currency", "modifiedAt"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "purchaseOrderId": { "type": "string", "format": "uuid" },
+    "purchaseOrderNumber": { "type": "string", "minLength": 1 },
+    "revision": { "type": "integer", "minimum": 2 },
+    "supplierId": { "type": "string", "format": "uuid" },
+    "projectId": { "type": "string", "format": "uuid" },
+    "totalAmount": { "type": "number", "minimum": 0 },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "modifiedAt": { "type": "string", "format": "date-time" }
+  }
+}

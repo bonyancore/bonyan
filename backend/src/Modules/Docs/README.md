@@ -1,18 +1,19 @@
 # Docs module
 
-- Module code: `docs`
-- Owner / backup: see `.github/CODEOWNERS` (fill in)
-- Spec: add the Notion link and update `docs/modules/README.md`
-- Events published / consumed: see spec 00 section 7
-- Tests: `backend/tests/Modules/Docs`
+The Docs module is registered through `Docs.Module` and exposes routes under `/api/v1/docs`. It stores generic
+record links in its own `docs` schema, so a document can point to a purchase order, supplier, invoice, or another
+record without a foreign key into that module. Every document and version is tenant-scoped and protected by RLS.
 
-Standard shape:
+## Implemented work
 
-```
-Docs.Contracts/        public: Dtos, Queries, Events (+ JSON schemas), Permissions, ErrorCodes
-Docs.Core/             Domain, Application (feature folders + Ports), Integration (Inbound, Outbound, Acl)
-Docs.Infrastructure/   Persistence (own schema, DbContext, migrations), ReadModels, Jobs, Adapters
-Docs.Api/              HTTP endpoints only, feature folders mirror Core/Application
-```
+- **DOC-401:** document metadata linked by record type and record ID; a file-service port confirms file IDs before
+  metadata is saved.
+- **DOC-402:** numbered document versions with `Draft`, `Approved`, and `Superseded` states. Approving a new
+  version supersedes the previous approved one.
+- EF Core persistence, audit fields, concurrency protection on document records, and tenant-scoped migrations.
 
-Project files and code are not added yet.
+Development settings enable a temporary PLT-207 file metadata adapter. It accepts non-empty file IDs for local
+workflow development; replace it with the real file service before relying on file existence checks in production.
+
+The domain and persistence test projects cover version transitions, EF mappings, and tenant query filters. The
+PostgreSQL RLS migration itself needs Docker-backed integration verification.

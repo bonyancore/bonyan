@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bonyan.dev/schemas/procurement.purchase-order-cancelled.v1.json",
+  "title": "PurchaseOrderCancelledV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "tenantId", "purchaseOrderId", "purchaseOrderNumber", "revision", "reason", "cancelledAt"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "purchaseOrderId": { "type": "string", "format": "uuid" },
+    "purchaseOrderNumber": { "type": "string", "minLength": 1 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "reason": { "type": "string", "minLength": 1 },
+    "cancelledAt": { "type": "string", "format": "date-time" }
+  }
+}

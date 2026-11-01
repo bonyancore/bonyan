@@ -10,6 +10,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Modules\Platform\Platform.Module\Platform.Module.csproj" />
+    <ProjectReference Include="..\..\Modules\Procurement\Procurement.Module\Procurement.Module.csproj" />
+    <ProjectReference Include="..\..\Modules\Docs\Docs.Module\Docs.Module.csproj" />
   </ItemGroup>
 
 </Project>

@@ -5,6 +5,10 @@ using Construction.Modules;
 using Construction.Persistence;
 using Construction.Platform;
 using Construction.Platform.Infrastructure.Persistence;
+using Construction.Procurement;
+using Construction.Procurement.Infrastructure.Persistence;
+using Construction.Docs;
+using Construction.Docs.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -92,7 +96,7 @@ public class ProductionModuleDiscoveryTests
     }
 
     [Fact]
-    public void ProductionDiscovery_DiscoversPlatformModuleAndVerifiesBaselineExemptions()
+    public void ProductionDiscovery_DiscoversPlatformProcurementAndDocsModules()
     {
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -103,17 +107,24 @@ public class ProductionModuleDiscoveryTests
 
         var result = DiscoverProductionTenantScopedTables(config);
 
-        // 1. Explicitly assert PlatformModule is discovered
+        // Each module contributes its entry point, migrations, and tenant-scoped tables.
         Assert.Contains("platform", result.DiscoveredModuleCodes);
         Assert.Contains(typeof(PlatformModule), result.DiscoveredModuleTypes);
+        Assert.Contains("procurement", result.DiscoveredModuleCodes);
+        Assert.Contains(typeof(ProcurementModule), result.DiscoveredModuleTypes);
+        Assert.Contains("docs", result.DiscoveredModuleCodes);
+        Assert.Contains(typeof(DocsModule), result.DiscoveredModuleTypes);
 
-        // 2. Explicitly assert PlatformDbContext is declared in migration metadata and successfully resolved from DI
         Assert.Contains(typeof(PlatformDbContext), result.DeclaredDbContextTypes);
         Assert.Contains(typeof(PlatformDbContext), result.ResolvedDbContextTypes);
-
-        // 3. Explicitly assert the production baseline contains 0 tenant-scoped tables
-        // (Platform.Core.Domain.Tenancy.Tenant is the root company aggregate and is exempt)
-        Assert.Empty(result.DiscoveredTenantScopedTables);
+        Assert.Contains(typeof(ProcurementDbContext), result.DeclaredDbContextTypes);
+        Assert.Contains(typeof(ProcurementDbContext), result.ResolvedDbContextTypes);
+        Assert.Contains(typeof(DocsDbContext), result.DeclaredDbContextTypes);
+        Assert.Contains(typeof(DocsDbContext), result.ResolvedDbContextTypes);
+        Assert.Contains(("procurement", "purchase_requests"), result.DiscoveredTenantScopedTables);
+        Assert.Contains(("procurement", "purchase_orders"), result.DiscoveredTenantScopedTables);
+        Assert.Contains(("docs", "documents"), result.DiscoveredTenantScopedTables);
+        Assert.Contains(("docs", "document_versions"), result.DiscoveredTenantScopedTables);
     }
 }
 

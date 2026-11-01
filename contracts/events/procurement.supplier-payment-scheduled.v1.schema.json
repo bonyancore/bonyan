@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bonyan.dev/schemas/procurement.supplier-payment-scheduled.v1.json",
+  "title": "SupplierPaymentScheduledV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "tenantId", "invoiceId", "purchaseOrderId", "supplierId", "paymentReference", "amount", "currency", "scheduledFor", "scheduledAt"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "invoiceId": { "type": "string", "format": "uuid" },
+    "purchaseOrderId": { "type": "string", "format": "uuid" },
+    "supplierId": { "type": "string", "format": "uuid" },
+    "paymentReference": { "type": "string", "minLength": 1 },
+    "amount": { "type": "number", "exclusiveMinimum": 0 },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "scheduledFor": { "type": "string", "format": "date" },
+    "scheduledAt": { "type": "string", "format": "date-time" }
+  }
+}

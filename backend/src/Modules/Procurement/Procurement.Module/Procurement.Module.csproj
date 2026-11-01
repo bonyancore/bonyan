@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\..\..\Shared\Construction.Modules\Construction.Modules.csproj" />
+    <ProjectReference Include="..\Procurement.Contracts\Procurement.Contracts.csproj" />
+    <ProjectReference Include="..\Procurement.Core\Procurement.Core.csproj" />
+    <ProjectReference Include="..\Procurement.Infrastructure\Procurement.Infrastructure.csproj" />
+    <ProjectReference Include="..\Procurement.Api\Procurement.Api.csproj" />
+  </ItemGroup>
+</Project>
