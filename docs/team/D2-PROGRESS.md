@@ -48,6 +48,22 @@ admin endpoint failed the authorization challenge. Both are now fixed and verifi
 Build `-warnaserror` clean; suite still **76/76**. The 200/409 replay-and-double-replay flow is covered by
 `DeadLetterStoreContractTests` (in-memory) — still **not** proven on PostgreSQL, see §5.
 
+### 0.2 Fourth defect found while running the ticket (rate limiter ordering)
+
+Driving the replay endpoint twelve times as one user, then once as a **different** user, gave 429 for both.
+Cause: `app.UseRateLimiter()` was registered **before** `UseAuthentication()`, so the per-user partition key
+(`ClaimTypes.NameIdentifier` / `sub`) was always empty and every caller shared the `anonymous` partition —
+the "per-user" limit was in fact global.
+
+Fix: pipeline order is now `UseAuthentication()` → `UseRateLimiter()` → `UseAuthorization()`. Verified:
+
+| Caller | Result |
+|---|---|
+| User A, 12 rapid replays | `404 ×10`, then `429 429` (limit exactly 10/min) |
+| User C (different user), 1 replay | `404` — own partition, not throttled |
+| User A again | `429` |
+| Anonymous (no headers) | `401` |
+
 **Lane note (review-flagged files touched):** `backend/src/Host/Construction.Api/Program.cs`,
 `backend/src/Host/Construction.Api/PlatformAuthentication.cs` (new). Module change: one line in
 `backend/src/Modules/Platform/Platform.Infrastructure/PlatformInfrastructureRegistration.cs`.

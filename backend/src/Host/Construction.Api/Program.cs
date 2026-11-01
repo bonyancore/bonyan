@@ -67,8 +67,11 @@ builder.Services.AddOpenApi(options =>
 
 var app = builder.Build();
 
-app.UseRateLimiter();
+// Authentication must run before the rate limiter: the platform admin policies partition per user, and
+// the partition key reads HttpContext.User, which is empty until authentication has populated it.
+// Limiting before authorization also rejects an abusive caller before permission checks run.
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 // Development endpoints
