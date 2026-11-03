@@ -49,3 +49,9 @@ public interface ITenantContext
     /// <summary>Throws if there is no tenant.</summary>
     TenantId Current { get; }
 }
+
+public interface ITenantSetter
+{
+    void SetTenant(TenantId tenantId);
+    IDisposable BeginScope(TenantId tenantId);
+}
