@@ -1,0 +1,55 @@
+# Independent audit scenarios for the API (Runbook §14). Only the scenarios below exist today.
+# Types: cross_tenant, idempotency, mass_assignment, etag, concurrency_create, single_winner, pagination_cap.
+#
+# PLT-204 (dead-letter + replay) notes:
+#  - Dead letters cannot be produced through the public API: they appear only after a handler fails
+#    five times. The scenarios therefore need a SEEDED dead row.
+#  - They use the test-only seeder `POST /test/outbox/dead` (Development/Test only, same family as the
+#    PLT-211 test-only token issuer). That route does not exist yet: it is required by PLT-211 and is
+#    recorded as a follow-up in docs/team/D2-PROGRESS.md. Until it exists these scenarios FAIL loudly
+#    (never silently pass) when the audit runs.
+scenarios:
+  - name: outbox-dead-cross-tenant          # S1/S4: tenant B must not read or replay tenant A's dead letter
+    type: cross_tenant
+    create: {path: /test/outbox/dead, body: {type: "test.order.placed.v1"}, id_from: id}
+    read:   {path: "/api/v1/platform/outbox/dead/{id}"}
+    mutate: {method: POST, path: "/api/v1/platform/outbox/dead/{id}/replay", body: {reason: "tenant B attempt"}}
+
+  - name: outbox-dead-page-cap              # S12/scalability: the list is keyset-paginated and capped
+    type: pagination_cap
+    create: {path: /test/outbox/dead, body: {type: "test.order.placed.v1"}}
+    list:   {path: /api/v1/platform/outbox/dead}
+    seed_count: 210
+    max_page: 100
+
+  - name: outbox-dead-double-replay         # PLT-204 race: two clicks on replay => exactly one wins
+    type: single_winner                     # conditional UPDATE ... WHERE replayed_at IS NULL
+    create: {path: /test/outbox/dead, body: {type: "test.order.placed.v1"}, id_from: id}
+    action: {method: POST, path: "/api/v1/platform/outbox/dead/{id}/replay", body: {reason: "audit replay race"}}
+    parallel: 6
+    expect_success: 1
+
+  - name: outbox-dead-double-discard        # spec 01 §7.5: two discards => exactly one wins, the other is 409
+    type: single_winner                     # conditional UPDATE ... WHERE resolution = 'open'
+    create: {path: /test/outbox/dead, body: {type: "test.order.placed.v1"}, id_from: id}
+    action: {method: POST, path: "/api/v1/platform/outbox/dead/{id}/discard", body: {note: "audit discard race"}}
+    parallel: 6
+    expect_success: 1
+
+  - name: outbox-dead-discard-needs-note    # S8/BR-PLT-63: a discard without a note is rejected and changes nothing
+    type: validation
+    create: {path: /test/outbox/dead, body: {type: "test.order.placed.v1"}, id_from: id}
+    action: {method: POST, path: "/api/v1/platform/outbox/dead/{id}/discard", body: {note: "   "}}
+    expect_status: 400
+    then: {method: GET, path: "/api/v1/platform/outbox/dead/{id}", expect_field: {resolution: open}}
+
+  - name: outbox-lag-cross-tenant            # S1/S4: the lag metric never counts another tenant's backlog
+    type: cross_tenant
+    create: {path: /test/outbox/dead, body: {type: "test.order.placed.v1"}}
+    read:   {path: /api/v1/platform/outbox/lag, expect_field: {pendingCount: 0}}
+
+  - name: outbox-dead-replay-mass-assignment   # S5: server-owned fields are never bound from the body
+    type: mass_assignment
+    create: {path: /test/outbox/dead, body: {type: "test.order.placed.v1"}}
+    inject: {replayedAt: "2026-01-01T00:00:00Z", replayedBy: "00000000-0000-0000-0000-000000000001", tenantId: "00000000-0000-0000-0000-000000000002"}
+    forbid_equal: [replayedAt, replayedBy]
