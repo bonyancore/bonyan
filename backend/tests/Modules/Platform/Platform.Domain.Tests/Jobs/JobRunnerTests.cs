@@ -170,4 +170,3 @@ public sealed class JobRunnerTests
         Assert.False(opts.IsEnabled("unknown"));
     }
 }
-

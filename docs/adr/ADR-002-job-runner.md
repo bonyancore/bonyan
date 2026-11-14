@@ -1,7 +1,7 @@
 # ADR-002: Hand-written job runner (no Hangfire)
 
-**Status:** Accepted  
-**Date:** 2026-10-30  
+**Status:** Accepted
+**Date:** 2026-10-30
 **Ticket:** PLT-203
 
 ## Context
