@@ -1,12 +1,13 @@
 using Construction.Kernel.Tenancy;
-using Construction.Persistence.Tenancy;
 using Construction.Worker;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddScoped<SettableTenantContext>();
-builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<SettableTenantContext>());
-builder.Services.AddScoped<ITenantSetter>(sp => sp.GetRequiredService<SettableTenantContext>());
+// Ambient tenant is set per job by JobRunner; default fails closed.
+builder.Services.AddSingleton<AsyncLocalTenantContext>();
+builder.Services.AddSingleton<ITenantContext>(sp => sp.GetRequiredService<AsyncLocalTenantContext>());
+builder.Services.AddSingleton<ITenantSetter>(sp => sp.GetRequiredService<AsyncLocalTenantContext>());
+
 builder.Services.AddAppModules(builder.Configuration);
 
 await builder.Build().RunAsync();

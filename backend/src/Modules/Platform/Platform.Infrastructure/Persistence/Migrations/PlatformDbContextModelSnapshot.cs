@@ -23,6 +23,58 @@ namespace Construction.Platform.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Construction.Platform.Core.Domain.Jobs.JobRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Attempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("attempts");
+
+                    b.Property<string>("ErrorCode")
+                        .HasColumnType("text")
+                        .HasColumnName("error_code");
+
+                    b.Property<DateTimeOffset?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at");
+
+                    b.Property<string>("Job")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("job");
+
+                    b.Property<string>("Queue")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("queue");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_job_runs");
+
+                    b.HasIndex("TenantId", "Job", "StartedAt")
+                        .HasDatabaseName("ix_job_runs_tenant_job_started");
+
+                    b.ToTable("job_runs", "platform");
+                });
+
             modelBuilder.Entity("Construction.Persistence.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
