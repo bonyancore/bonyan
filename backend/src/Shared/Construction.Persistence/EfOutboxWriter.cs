@@ -80,7 +80,11 @@ public sealed class EfOutboxWriter : IOutbox
             LockedBy = null,
             LockedUntil = null,
             DispatchedAt = null,
-            DeadAt = null
+            DeadAt = null,
+            CorrelationId = envelope.CorrelationId,
+            CausationId = envelope.CausationId,
+            ActorId = envelope.ActorId,
+            ProjectId = envelope.ProjectId
         };
 
         _dbContext.Set<OutboxMessage>().Add(message);

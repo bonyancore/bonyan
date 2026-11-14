@@ -25,6 +25,10 @@ public sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outbox
         builder.Property(x => x.LockedUntil).HasColumnName("locked_until").HasColumnType("timestamp with time zone").IsRequired(false);
         builder.Property(x => x.DispatchedAt).HasColumnName("dispatched_at").HasColumnType("timestamp with time zone").IsRequired(false);
         builder.Property(x => x.DeadAt).HasColumnName("dead_at").HasColumnType("timestamp with time zone").IsRequired(false);
+        builder.Property(x => x.CorrelationId).HasColumnName("correlation_id").IsRequired();
+        builder.Property(x => x.CausationId).HasColumnName("causation_id").IsRequired(false);
+        builder.Property(x => x.ActorId).HasColumnName("actor_id").IsRequired(false);
+        builder.Property(x => x.ProjectId).HasColumnName("project_id").IsRequired(false);
 
         builder.HasIndex(x => new { x.NextAttemptAt, x.Id })
             .HasDatabaseName("ix_outbox_pending")

@@ -55,7 +55,8 @@ public sealed class PostgresOutboxRepository : IOutboxRepository
             WHERE o.id = cand.id
             RETURNING o.id, o.tenant_id, o.aggregate_type, o.aggregate_id, o.aggregate_version,
                       o.type, o.payload, o.occurred_at, o.attempts, o.next_attempt_at,
-                      o.locked_by, o.locked_until, o.dispatched_at, o.dead_at;";
+                      o.locked_by, o.locked_until, o.dispatched_at, o.dead_at,
+                      o.correlation_id, o.causation_id, o.actor_id, o.project_id;";
 
         await using var cmd = connection.CreateCommand();
         cmd.Transaction = transaction;
@@ -297,7 +298,11 @@ public sealed class PostgresOutboxRepository : IOutboxRepository
             LockedBy = reader.IsDBNull(reader.GetOrdinal("locked_by")) ? null : reader.GetString(reader.GetOrdinal("locked_by")),
             LockedUntil = reader.IsDBNull(reader.GetOrdinal("locked_until")) ? null : reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("locked_until")),
             DispatchedAt = reader.IsDBNull(reader.GetOrdinal("dispatched_at")) ? null : reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("dispatched_at")),
-            DeadAt = reader.IsDBNull(reader.GetOrdinal("dead_at")) ? null : reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("dead_at"))
+            DeadAt = reader.IsDBNull(reader.GetOrdinal("dead_at")) ? null : reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("dead_at")),
+            CorrelationId = reader.IsDBNull(reader.GetOrdinal("correlation_id")) ? reader.GetGuid(reader.GetOrdinal("id")) : reader.GetGuid(reader.GetOrdinal("correlation_id")),
+            CausationId = reader.IsDBNull(reader.GetOrdinal("causation_id")) ? null : reader.GetGuid(reader.GetOrdinal("causation_id")),
+            ActorId = reader.IsDBNull(reader.GetOrdinal("actor_id")) ? null : reader.GetGuid(reader.GetOrdinal("actor_id")),
+            ProjectId = reader.IsDBNull(reader.GetOrdinal("project_id")) ? null : reader.GetGuid(reader.GetOrdinal("project_id"))
         };
     }
 
