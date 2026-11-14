@@ -23,9 +23,106 @@ namespace Construction.Platform.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Construction.Persistence.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<Guid>("AggregateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("aggregate_id");
+
+                    b.Property<string>("AggregateType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("aggregate_type");
+
+                    b.Property<long>("AggregateVersion")
+                        .HasColumnType("bigint")
+                        .HasColumnName("aggregate_version");
+
+                    b.Property<int>("Attempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("attempts");
+
+                    b.Property<Guid?>("CausationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("causation_id");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTimeOffset?>("DeadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dead_at");
+
+                    b.Property<DateTimeOffset?>("DispatchedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dispatched_at");
+
+                    b.Property<string>("LockedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("locked_by");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_outbox");
+
+                    b.HasIndex("AggregateId", "Id")
+                        .HasDatabaseName("ix_outbox_agg")
+                        .HasFilter("dispatched_at IS NULL");
+
+                    b.HasIndex("NextAttemptAt", "Id")
+                        .HasDatabaseName("ix_outbox_pending")
+                        .HasFilter("dispatched_at IS NULL AND dead_at IS NULL");
+
+                    b.ToTable("outbox", "platform");
+                });
+
             modelBuilder.Entity("Construction.Platform.Core.Domain.Jobs.JobRun", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -79,94 +176,14 @@ namespace Construction.Platform.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_job_runs");
 
-                    b.HasIndex("TenantId", "Job", "StartedAt")
-                        .HasDatabaseName("ix_job_runs_tenant_job_started");
-
                     b.HasIndex("TenantId", "Job", "RunKey")
                         .IsUnique()
                         .HasDatabaseName("uq_job_runs_tenant_job_run_key");
 
+                    b.HasIndex("TenantId", "Job", "StartedAt")
+                        .HasDatabaseName("ix_job_runs_tenant_job_started");
+
                     b.ToTable("job_runs", "platform");
-                });
-
-            modelBuilder.Entity("Construction.Persistence.OutboxMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("AggregateId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("aggregate_id");
-
-                    b.Property<string>("AggregateType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("aggregate_type");
-
-                    b.Property<long>("AggregateVersion")
-                        .HasColumnType("bigint")
-                        .HasColumnName("aggregate_version");
-
-                    b.Property<int>("Attempts")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("attempts");
-
-                    b.Property<DateTimeOffset?>("DeadAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("dead_at");
-
-                    b.Property<DateTimeOffset?>("DispatchedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("dispatched_at");
-
-                    b.Property<string>("LockedBy")
-                        .HasColumnType("text")
-                        .HasColumnName("locked_by");
-
-                    b.Property<DateTimeOffset?>("LockedUntil")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("locked_until");
-
-                    b.Property<DateTimeOffset>("NextAttemptAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("next_attempt_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<DateTimeOffset>("OccurredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("occurred_at");
-
-                    b.Property<string>("Payload")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("payload");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("type");
-
-                    b.HasKey("Id")
-                        .HasName("pk_outbox");
-
-                    b.HasIndex("AggregateId", "Id")
-                        .HasDatabaseName("ix_outbox_agg")
-                        .HasFilter("dispatched_at IS NULL");
-
-                    b.HasIndex("NextAttemptAt", "Id")
-                        .HasDatabaseName("ix_outbox_pending")
-                        .HasFilter("dispatched_at IS NULL AND dead_at IS NULL");
-
-                    b.ToTable("outbox", "platform");
                 });
 
             modelBuilder.Entity("Construction.Platform.Core.Domain.Messaging.ProcessedEvent", b =>

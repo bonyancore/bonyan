@@ -1,6 +1,9 @@
 -- Application role: cannot bypass RLS (BR-PLT-01). Migrations run as `postgres` (owner), the app runs as `app`.
 CREATE ROLE app LOGIN PASSWORD 'app_dev_pw' NOSUPERUSER NOBYPASSRLS;
 
+-- Outbox dispatcher role (RFC 0001): cross-tenant claiming under forced RLS without BYPASSRLS
+CREATE ROLE cc_outbox_dispatcher LOGIN PASSWORD 'dispatcher_dev_pw' NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
+
 CREATE EXTENSION IF NOT EXISTS citext;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS unaccent;

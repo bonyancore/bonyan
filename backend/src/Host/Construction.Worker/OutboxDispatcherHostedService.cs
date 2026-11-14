@@ -17,31 +17,39 @@ public sealed class OutboxDispatcherHostedService(
             try
             {
                 await using var scope = scopeFactory.CreateAsyncScope();
-                var db = scope.ServiceProvider.GetService<PlatformDbContext>();
                 var tenantSetter = scope.ServiceProvider.GetRequiredService<ITenantSetter>();
+                var repo = scope.ServiceProvider.GetService<IOutboxRepository>();
+                var registry = scope.ServiceProvider.GetService<IOutboxConsumerRegistry>();
 
-                if (db is null)
+                if (repo is null)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken).ConfigureAwait(false);
-                    continue;
-                }
-
-                var repo = new PostgresOutboxRepository(async ct =>
-                {
-                    var conn = db.Database.GetDbConnection();
-                    if (conn.State != System.Data.ConnectionState.Open)
+                    var db = scope.ServiceProvider.GetService<PlatformDbContext>();
+                    if (db is null)
                     {
-                        await db.Database.OpenConnectionAsync(ct).ConfigureAwait(false);
+                        await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken).ConfigureAwait(false);
+                        continue;
                     }
 
-                    return conn;
-                });
+                    repo = new PostgresOutboxRepository(async ct =>
+                    {
+                        var conn = db.Database.GetDbConnection();
+                        if (conn.State != System.Data.ConnectionState.Open)
+                        {
+                            await db.Database.OpenConnectionAsync(ct).ConfigureAwait(false);
+                        }
 
-                // Delivery wiring for typed consumers lands with module consumers; no-op mark path for host boot.
+                        return conn;
+                    });
+                }
+
+                OutboxMessageDeliveryHandler handler = registry != null
+                    ? registry.DeliverAsync
+                    : (_, _) => Task.CompletedTask;
+
                 var dispatcher = new OutboxDispatcher(
                     repo,
                     tenantSetter,
-                    (_, _) => Task.CompletedTask,
+                    handler,
                     workerId: Environment.MachineName);
 
                 await dispatcher.ProcessBatchAsync(cancellationToken: stoppingToken).ConfigureAwait(false);

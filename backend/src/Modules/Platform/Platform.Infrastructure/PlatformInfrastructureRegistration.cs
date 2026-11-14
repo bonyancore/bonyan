@@ -77,9 +77,21 @@ public static class PlatformInfrastructureRegistration
         var moduleOptions = BindModuleOptions(config);
         services.AddSingleton(moduleOptions);
         services.TryAddSingleton<IClock>(_ => new SystemClock(TimeProvider.System));
+        // Note: PLT-203 gap — DictionaryTenantJobEnablement is non-persistent;
+        // replace with database-backed enablement when tenant job configuration table is added.
         services.AddSingleton<ITenantJobEnablement>(
             _ => new DictionaryTenantJobEnablement());
         services.AddSingleton<IJob, PlatformHeartbeatJob>();
+
+        services.AddSingleton<IOutboxConsumerRegistry, CompositeOutboxConsumerRegistry>();
+        services.AddSingleton<IOutboxRepository>(sp =>
+        {
+            var conf = sp.GetRequiredService<IConfiguration>();
+            var connStr = conf.GetConnectionString("OutboxDispatcher")
+                ?? conf.GetConnectionString("Default")
+                ?? throw new InvalidOperationException("Connection string is not configured.");
+            return new PostgresOutboxRepository(_ => Task.FromResult<DbConnection>(new NpgsqlConnection(connStr)));
+        });
 
         // Production default is PostgreSQL. The in-memory adapters exist for tests and for an
         // explicitly-enabled development run, and are refused outside Development/Test (§8.5).
