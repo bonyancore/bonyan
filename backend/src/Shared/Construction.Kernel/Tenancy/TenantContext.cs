@@ -55,3 +55,36 @@ public interface ITenantSetter
     void SetTenant(TenantId tenantId);
     IDisposable BeginScope(TenantId tenantId);
 }
+
+/// <summary>
+/// AsyncLocal-backed implementation used in tests and in-process middleware.
+/// Each async context (async/await branch) sees its own tenant, so tests can
+/// run concurrently without sharing state.
+/// </summary>
+public sealed class AsyncLocalTenantContext : ITenantContext, ITenantSetter
+{
+    private static readonly AsyncLocal<TenantId?> CurrentTenant = new();
+
+    public bool HasTenant => CurrentTenant.Value.HasValue;
+
+    public TenantId Current => CurrentTenant.Value
+        ?? throw new InvalidOperationException("No tenant context is currently set.");
+
+    public void SetTenant(TenantId tenantId) => CurrentTenant.Value = tenantId;
+
+    public IDisposable BeginScope(TenantId tenantId)
+    {
+        var previous = CurrentTenant.Value;
+        CurrentTenant.Value = tenantId;
+        return new Scope(() => CurrentTenant.Value = previous);
+    }
+
+    private sealed class Scope(Action onDispose) : IDisposable
+    {
+        private Action? _onDispose = onDispose;
+        public void Dispose()
+        {
+            Interlocked.Exchange(ref _onDispose, null)?.Invoke();
+        }
+    }
+}
