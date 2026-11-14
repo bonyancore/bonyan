@@ -73,7 +73,7 @@ public sealed class JobRunnerTests
         var job = new RecordingJob();
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            runner.RunAsync(job, new TenantId(Guid.Empty)));
+            runner.RunAsync(job, default));
     }
 
     [Fact]
