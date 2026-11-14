@@ -15,6 +15,7 @@ public sealed class PlatformDbContext(
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<ProcessedEvent> ProcessedEvents => Set<ProcessedEvent>();
+    public DbSet<OutboxMessage> Outbox => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

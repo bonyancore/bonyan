@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Construction.Kernel\Construction.Kernel.csproj" />
+    <ProjectReference Include="..\Construction.Messaging\Construction.Messaging.csproj" />
   </ItemGroup>
 
   <ItemGroup>
