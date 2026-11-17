@@ -2,11 +2,6 @@ using Construction.Kernel.Tenancy;
 
 namespace Construction.Persistence.Tenancy;
 
-public interface ITenantSetter
-{
-    void SetTenant(TenantId tenantId);
-}
-
 public sealed class SettableTenantContext : ITenantContext, ITenantSetter
 {
     private TenantId? _current;
@@ -15,7 +10,7 @@ public sealed class SettableTenantContext : ITenantContext, ITenantSetter
 
     public TenantId Current => _current ?? throw new InvalidOperationException("No tenant has been set for this scope.");
 
-    void ITenantSetter.SetTenant(TenantId tenantId)
+    public void SetTenant(TenantId tenantId)
     {
         tenantId.EnsureValid();
 
@@ -25,6 +20,23 @@ public sealed class SettableTenantContext : ITenantContext, ITenantSetter
         }
 
         _current = tenantId;
+    }
+
+    public IDisposable BeginScope(TenantId tenantId)
+    {
+        tenantId.EnsureValid();
+        var previous = _current;
+        _current = tenantId;
+        return new Scope(() => _current = previous);
+    }
+
+    private sealed class Scope(Action onDispose) : IDisposable
+    {
+        private Action? _onDispose = onDispose;
+        public void Dispose()
+        {
+            Interlocked.Exchange(ref _onDispose, null)?.Invoke();
+        }
     }
 }
 

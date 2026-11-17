@@ -22,9 +22,8 @@ public class TenantScopeTests
     {
         var tenantId = TenantId.New();
         var sut = new SettableTenantContext();
-        var setter = (ITenantSetter)sut;
 
-        setter.SetTenant(tenantId);
+        sut.SetTenant(tenantId);
 
         Assert.True(sut.HasTenant);
         Assert.Equal(tenantId, sut.Current);
@@ -36,11 +35,10 @@ public class TenantScopeTests
         var t1 = TenantId.New();
         var t2 = TenantId.New();
         var sut = new SettableTenantContext();
-        var setter = (ITenantSetter)sut;
 
-        setter.SetTenant(t1);
+        sut.SetTenant(t1);
 
-        var ex = Assert.Throws<InvalidOperationException>(() => setter.SetTenant(t2));
+        var ex = Assert.Throws<InvalidOperationException>(() => sut.SetTenant(t2));
         Assert.Contains("immutable", ex.Message);
         Assert.Equal(t1, sut.Current);
     }
@@ -49,9 +47,105 @@ public class TenantScopeTests
     public void SettableTenantContext_SetTenant_DefaultOrEmptyTenantId_ThrowsInvalidOperationException()
     {
         var sut = new SettableTenantContext();
-        var setter = (ITenantSetter)sut;
 
-        Assert.Throws<InvalidOperationException>(() => setter.SetTenant(default));
+        Assert.Throws<InvalidOperationException>(() => sut.SetTenant(default));
+    }
+
+    [Fact]
+    public void SettableTenantContext_BeginScope_SetsCurrent_AndRestoresOnDispose()
+    {
+        var sut = new SettableTenantContext();
+        var initialTenant = TenantId.New();
+        sut.SetTenant(initialTenant);
+
+        var scopedTenant = TenantId.New();
+        using (sut.BeginScope(scopedTenant))
+        {
+            Assert.True(sut.HasTenant);
+            Assert.Equal(scopedTenant, sut.Current);
+        }
+
+        // Restored to initial tenant on dispose
+        Assert.True(sut.HasTenant);
+        Assert.Equal(initialTenant, sut.Current);
+    }
+
+    [Fact]
+    public void SettableTenantContext_BeginScope_NestedScopes_RestoresCorrectly()
+    {
+        var sut = new SettableTenantContext();
+        var tenant1 = TenantId.New();
+        var tenant2 = TenantId.New();
+        var tenant3 = TenantId.New();
+
+        sut.SetTenant(tenant1);
+
+        using (sut.BeginScope(tenant2))
+        {
+            Assert.Equal(tenant2, sut.Current);
+
+            using (sut.BeginScope(tenant3))
+            {
+                Assert.Equal(tenant3, sut.Current);
+            }
+
+            Assert.Equal(tenant2, sut.Current);
+        }
+
+        Assert.Equal(tenant1, sut.Current);
+    }
+
+    [Fact]
+    public void SettableTenantContext_BeginScope_ExceptionThrown_RestoresOnDispose()
+    {
+        var sut = new SettableTenantContext();
+        var initialTenant = TenantId.New();
+        sut.SetTenant(initialTenant);
+
+        var scopedTenant = TenantId.New();
+
+        try
+        {
+            using (sut.BeginScope(scopedTenant))
+            {
+                Assert.Equal(scopedTenant, sut.Current);
+                throw new InvalidOperationException("Simulated failure inside scope");
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // Expected
+        }
+
+        Assert.True(sut.HasTenant);
+        Assert.Equal(initialTenant, sut.Current);
+    }
+
+    [Fact]
+    public void SettableTenantContext_BeginScope_DisposedTwice_IsSafe()
+    {
+        var sut = new SettableTenantContext();
+        var initialTenant = TenantId.New();
+        sut.SetTenant(initialTenant);
+
+        var scopedTenant = TenantId.New();
+        var scope = sut.BeginScope(scopedTenant);
+        Assert.Equal(scopedTenant, sut.Current);
+
+        scope.Dispose();
+        Assert.Equal(initialTenant, sut.Current);
+
+        // Second dispose should be a no-op and not throw
+        scope.Dispose();
+        Assert.Equal(initialTenant, sut.Current);
+    }
+
+    [Fact]
+    public void SettableTenantContext_BeginScope_DefaultOrEmptyTenantId_ThrowsInvalidOperationException()
+    {
+        var sut = new SettableTenantContext();
+
+        Assert.Throws<InvalidOperationException>(() => sut.BeginScope(default));
     }
 
     [Fact]
@@ -99,4 +193,3 @@ public class TenantScopeTests
         Assert.Throws<InvalidOperationException>(() => rootProvider.CreateTenantScope(default));
     }
 }
-
