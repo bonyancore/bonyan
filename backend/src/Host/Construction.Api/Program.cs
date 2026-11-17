@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 using Construction.Api;
 using Construction.Api.Tenancy;
 using Construction.Kernel.Tenancy;
+using Construction.Messaging;
+using Construction.Platform.Core.Application.Outbox;
+using Construction.Platform.Infrastructure.Application;
 using Construction.Web;
 using Construction.Web.Errors;
 using Microsoft.AspNetCore.OpenApi;
@@ -13,6 +16,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantContext, ClaimsPrincipalTenantContext>();
+builder.Services.AddSingleton<AsyncLocalTenantContext>();
+builder.Services.AddSingleton<ITenantSetter>(sp => sp.GetRequiredService<AsyncLocalTenantContext>());
+
+// Test consumer and test probe
+builder.Services.AddSingleton<MessagingTestProbe>();
+builder.Services.AddScoped<TestConsumer>();
+
 builder.Services.AddWebInfrastructure();
 builder.Services.AddAppModules(builder.Configuration);
 
@@ -56,6 +66,13 @@ builder.Services.AddOpenApi(options =>
 var app = builder.Build();
 
 app.UseWebExceptionHandler();
+
+// Authentication must run before the rate limiter: the platform admin policies partition per user, and
+// the partition key reads HttpContext.User, which is empty until authentication has populated it.
+// Limiting before authorization also rejects an abusive caller before permission checks run.
+app.UseAuthentication();
+app.UseRateLimiter();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
