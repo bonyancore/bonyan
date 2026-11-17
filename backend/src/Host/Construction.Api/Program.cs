@@ -1,12 +1,15 @@
 using Construction.Api;
 using Construction.Api.Tenancy;
 using Construction.Kernel.Tenancy;
+using Construction.Web;
+using Construction.Web.Errors;
 using Microsoft.AspNetCore.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantContext, ClaimsPrincipalTenantContext>();
+builder.Services.AddWebInfrastructure();
 builder.Services.AddAppModules(builder.Configuration);
 
 builder.Services.AddOpenApi(options =>
@@ -22,6 +25,8 @@ builder.Services.AddOpenApi(options =>
 });
 
 var app = builder.Build();
+
+app.UseWebExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Modules\Platform\Platform.Module\Platform.Module.csproj" />
+    <ProjectReference Include="..\..\Shared\Construction.Web\Construction.Web.csproj" />
   </ItemGroup>
 
 </Project>
