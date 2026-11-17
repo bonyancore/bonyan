@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "appName": "Construction Connect",
+    "description": "One system to run the whole project lifecycle."
+  },
+  "nav": {
+    "label": "Main navigation",
+    "home": "Home",
+    "tasks": "My tasks",
+    "procurement": "Procurement",
+    "site": "Site",
+    "money": "Money",
+    "quality": "Quality",
+    "projects": "Projects",
+    "system": "System"
+  },
+  "system": {
+    "tabsLabel": "Module sections",
+    "roles": "Roles",
+    "approvals": "Approvals",
+    "automation": "Automation",
+    "masterData": "Master data",
+    "notifications": "Notifications",
+    "users": "Users",
+    "operator": "Operator"
+  },
+  "topbar": {
+    "project": "Project",
+    "searchPlaceholder": "Search or type a command…",
+    "searchLabel": "Search",
+    "code": "Code",
+    "date": "Date",
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "locale": {
+    "label": "Language",
+    "switchTo": "Switch language to {language}"
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "retry": "Try again",
+    "add": "Add",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "overdue": "Overdue",
+    "money": "<cur>{currency}</cur> <num>{amount}</num>",
+    "comingSoon": "Coming soon",
+    "moneyMillions": "<cur>{currency}</cur> <num>{amount}</num>M"
+  },
+  "tasks": {
+    "dueToday": "{count, plural, =0 {Nothing due today} one {# task due today} other {# tasks due today}}",
+    "columns": {
+      "todo": "To do",
+      "doing": "In progress",
+      "waiting": "Waiting on others",
+      "done": "Done today"
+    },
+    "tags": {
+      "procurement": "Procurement",
+      "receiving": "Receiving",
+      "matching": "Matching",
+      "draft": "Draft",
+      "site": "Site",
+      "rfi": "RFI",
+      "payment": "Payment"
+    },
+    "board": {
+      "label": "Tasks board",
+      "empty": "Drop a task here",
+      "column": "{column}, {count, plural, one {# task} other {# tasks}}"
+    },
+    "a11y": {
+      "instructions": "Press space to lift a task, use the arrow keys to move it, space to drop and escape to cancel. Press enter to open its details.",
+      "start": "Picked up {title}",
+      "over": "{title} is over {column}",
+      "drop": "Dropped {title} in {column}",
+      "cancel": "Cancelled, {title} returned to its place"
+    },
+    "drawer": {
+      "label": "Task details",
+      "close": "Close",
+      "status": "Status",
+      "assignee": "Assignee",
+      "due": "Due",
+      "progress": "Progress",
+      "description": "Description",
+      "attachments": "Attachments",
+      "attachmentsEmpty": "No files attached yet",
+      "attach": "Add files",
+      "comments": "Comments",
+      "commentsEmpty": "No comments yet. Start the conversation.",
+      "commentPlaceholder": "Write a comment…",
+      "send": "Send",
+      "justNow": "Just now",
+      "module": "Module",
+      "kb": "{value} KB"
+    },
+    "toolbar": {
+      "filters": "Filter by module",
+      "views": "View",
+      "all": "All",
+      "board": "Board",
+      "list": "List",
+      "dragOff": "Dragging is off while a filter is active"
+    }
+  },
+  "errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The page you are looking for does not exist or was moved.",
+    "backHome": "Back to home"
+  },
+  "currency": {
+    "EGP": "EGP",
+    "SAR": "SAR",
+    "USD": "USD"
+  },
+  "dashboard": {
+    "kpi": {
+      "contract": "Contract value",
+      "progress": "Overall progress",
+      "cash": "Cash position",
+      "approvals": "Waiting for approval"
+    },
+    "note": {
+      "variations": "{percent} in approved variations",
+      "ahead": "{points} points ahead of plan",
+      "runway": "{weeks, plural, one {Covers # week} other {Covers # weeks}} of outflow",
+      "overdue": "{count} overdue"
+    },
+    "cashFlow": {
+      "title": "Cash flow",
+      "planned": "Planned",
+      "actual": "Actual",
+      "point": "{month}: planned {planned}, actual {actual}",
+      "unit": "Cumulative, EGP millions"
+    },
+    "millions": "{value}M",
+    "needsYou": {
+      "title": "Needs you today",
+      "all": "Open my tasks"
+    },
+    "packages": {
+      "title": "Progress by package",
+      "planned": "Planned"
+    },
+    "pipeline": {
+      "title": "Procurement pipeline",
+      "requested": "Requested",
+      "ordered": "Ordered",
+      "delivered": "Delivered",
+      "invoiced": "Invoiced"
+    }
+  }
+}

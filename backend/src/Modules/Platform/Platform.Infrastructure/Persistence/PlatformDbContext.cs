@@ -1,5 +1,7 @@
 using Construction.Kernel.Tenancy;
 using Construction.Persistence;
+using Construction.Platform.Core.Domain.Jobs;
+using Construction.Platform.Core.Domain.Messaging;
 using Construction.Platform.Core.Domain.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,6 +15,9 @@ public sealed class PlatformDbContext(
     public const string Schema = "platform";
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<ProcessedEvent> ProcessedEvents => Set<ProcessedEvent>();
+    public DbSet<OutboxMessage> Outbox => Set<OutboxMessage>();
+    public DbSet<JobRun> JobRuns => Set<JobRun>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

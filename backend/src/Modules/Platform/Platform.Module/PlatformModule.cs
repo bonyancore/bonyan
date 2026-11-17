@@ -15,7 +15,9 @@ public sealed class PlatformModule : IModule
     public IReadOnlyCollection<PermissionDefinition> Permissions =>
     [
         new("platform.tenant.read", "View tenant details"),
-        new("platform.tenant.update", "Update tenant settings")
+        new("platform.tenant.update", "Update tenant settings"),
+        new("platform.outbox.view", "View dead-lettered outbox messages"),
+        new("platform.outbox.manage", "Replay or discard dead-lettered outbox messages")
     ];
 
     public IReadOnlyCollection<MigrationInfo> Migrations =>
@@ -26,6 +28,7 @@ public sealed class PlatformModule : IModule
     public void AddServices(IServiceCollection services, IConfiguration config)
     {
         services.AddPlatformInfrastructure(config);
+        services.AddPlatformApi();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder app)
@@ -33,4 +36,3 @@ public sealed class PlatformModule : IModule
         app.MapPlatformEndpoints();
     }
 }
-
