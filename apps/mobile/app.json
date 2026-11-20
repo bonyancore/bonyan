@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "bonyan",
+    "slug": "bonyan",
+    "scheme": "bonyan",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#090C10",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bonyancore.mobile"
+    },
+    "android": {
+      "package": "com.bonyancore.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#090C10",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "backgroundColor": "#090C10",
+          "dark": {
+            "backgroundColor": "#090C10"
+          }
+        }
+      ],
+      [
+        "expo-localization",
+        {
+          "supportsRTL": true,
+          "supportedLocales": {
+            "ios": ["en", "ar"],
+            "android": ["en", "ar"]
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
