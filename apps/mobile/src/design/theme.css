@@ -1,0 +1,55 @@
+@theme {
+  --spacing: 4px;
+  --radius-chip: 10px;
+  --radius-control: 14px;
+  --radius-solid: 16px;
+  --radius-card: 20px;
+  --radius-panel: 24px;
+  --radius-sheet: 32px;
+  --radius-full: 9999px;
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.30);
+  --shadow-glassNav: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --shadow-glassOverlay: 0 -16px 48px rgba(0, 0, 0, 0.50);
+  --shadow-glassFloating: 0 16px 48px rgba(0, 0, 0, 0.50);
+  --shadow-ember: 0 12px 28px rgba(240, 160, 75, 0.30);
+}
+
+@layer theme {
+  :root {
+    --color-background: #090C10;
+    --color-surface: #10161D;
+    --color-elevated: #161D26;
+    --color-raised: #1F2833;
+    --color-sunken: #0C1117;
+    --color-solid-glass: #121820;
+    --color-line: rgba(255, 255, 255, 0.07);
+    --color-line-strong: rgba(255, 255, 255, 0.10);
+    --color-line-focus: rgba(255, 255, 255, 0.16);
+    --color-highlight: rgba(255, 255, 255, 0.18);
+    --color-glass: rgba(26, 34, 44, 0.58);
+    --color-glass-overlay: rgba(18, 24, 32, 0.78);
+    --color-scrim: rgba(0, 0, 0, 0.55);
+    --color-foreground: #EDF0F4;
+    --color-foreground-soft: #AEB6C1;
+    --color-foreground-muted: #8A95A3;
+    --color-action: #F0A04B;
+    --color-action-strong: #EC9A3F;
+    --color-action-highlight: #F6B05C;
+    --color-on-action: #1B1206;
+    --color-action-tint: rgba(240, 160, 75, 0.14);
+    --color-action-ring: rgba(240, 160, 75, 0.55);
+    --color-success: #5ED1A1;
+    --color-success-tint: rgba(94, 209, 161, 0.14);
+    --color-info: #84B6EB;
+    --color-info-tint: rgba(132, 182, 235, 0.14);
+    --color-warning: #F4D167;
+    --color-warning-tint: rgba(244, 209, 103, 0.14);
+    --color-danger: #F27A6D;
+    --color-danger-tint: rgba(242, 122, 109, 0.14);
+    --color-chart-glacier: #84B6EB;
+    --color-chart-mint: #5ED1A1;
+    --color-chart-ember: #F0A04B;
+    --color-chart-iris: #A9A4F4;
+    --color-chart-rose: #E595B8;
+  }
+}
