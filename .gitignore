@@ -34,4 +34,11 @@ __pycache__/
 # Local infra data
 .data/
 
-docs
+# Local .NET/Jest/Playwright output
+artifacts/
+*.trx
+coverage/
+coverage.*
+
+# Freebuff local state
+.freebuff/

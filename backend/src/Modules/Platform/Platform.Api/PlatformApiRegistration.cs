@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Construction.Kernel.Tenancy;
+using Construction.Platform.Contracts;
 using Construction.Platform.Core.Application.Outbox;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -80,19 +81,22 @@ public static class PlatformApiRegistration
                 var size = pageSize ?? 50;
                 if (size is < 1 or > 100 || cursorDeadAt.HasValue != cursorId.HasValue)
                 {
-                    return Results.BadRequest(new { code = "platform.invalid_pagination" });
+                    return PlatformApiResults.FromError(Construction.Kernel.Error.Validation(
+                        PlatformErrorCodes.InvalidPagination, "pageSize must be between 1 and 100, and both cursors supplied together."));
                 }
 
                 var typeFilter = string.IsNullOrWhiteSpace(eventType) ? null : eventType.Trim();
                 if (typeFilter is { Length: > MaxEventTypeLength })
                 {
-                    return Results.BadRequest(new { code = "platform.invalid_filter" });
+                    return PlatformApiResults.FromError(Construction.Kernel.Error.Validation(
+                        PlatformErrorCodes.InvalidFilter, "eventType is too long."));
                 }
 
                 var resolutionFilter = string.IsNullOrWhiteSpace(resolution) ? null : resolution.Trim();
                 if (resolutionFilter is not null && !KnownResolutions.Contains(resolutionFilter))
                 {
-                    return Results.BadRequest(new { code = "platform.invalid_filter" });
+                    return PlatformApiResults.FromError(Construction.Kernel.Error.Validation(
+                        PlatformErrorCodes.InvalidFilter, "resolution must be open, replayed or discarded."));
                 }
 
                 using var scope = tenantSetter.BeginScope(new TenantId(tenantId));
@@ -136,7 +140,9 @@ public static class PlatformApiRegistration
                 using var scope = tenantSetter.BeginScope(new TenantId(tenantId));
                 var row = await store.GetAsync(tenantId, id, cancellationToken);
                 return row is null
-                    ? Results.NotFound(new { code = "platform.dead_message_not_found" })
+                    ? PlatformApiResults.FromError(Construction.Kernel.Error.NotFound(
+                        PlatformErrorCodes.DeadMessageNotFound,
+                        PlatformErrorCodes.English(PlatformErrorCodes.DeadMessageNotFound)))
                     : Results.Ok(row);
             })
             .RequireAuthorization(ViewPermission)
@@ -165,6 +171,17 @@ public static class PlatformApiRegistration
                 }
 
                 using var scope = tenantSetter.BeginScope(new TenantId(tenantId));
+
+                // R-204-05: replaying a financial event needs the platform operator claim as well as
+                // the tenant-admin manage permission. Non-financial events keep the tenant grant.
+                var dead = await store.GetAsync(tenantId, id, cancellationToken);
+                if (dead is not null && IsFinancialEvent(dead.Type) && !IsPlatformOperator(httpContext.User))
+                {
+                    return PlatformApiResults.FromError(Construction.Kernel.Error.Forbidden(
+                        PlatformErrorCodes.FinancialEventRequiresOperator,
+                        PlatformErrorCodes.English(PlatformErrorCodes.FinancialEventRequiresOperator)));
+                }
+
                 var result = await store.ReplayAsync(tenantId, actorId, id, request.Reason, cancellationToken);
                 return result.State == DeadLetterResolutionState.Resolved
                     ? Results.Ok(new ReplayDeadOutboxResponse(id, result.EventId, result.At, actorId))
@@ -200,6 +217,15 @@ public static class PlatformApiRegistration
                 }
 
                 using var scope = tenantSetter.BeginScope(new TenantId(tenantId));
+
+                var dead = await store.GetAsync(tenantId, id, cancellationToken);
+                if (dead is not null && IsFinancialEvent(dead.Type) && !IsPlatformOperator(httpContext.User))
+                {
+                    return PlatformApiResults.FromError(Construction.Kernel.Error.Forbidden(
+                        PlatformErrorCodes.FinancialEventRequiresOperator,
+                        PlatformErrorCodes.English(PlatformErrorCodes.FinancialEventRequiresOperator)));
+                }
+
                 var result = await store.DiscardAsync(tenantId, actorId, id, request.Note, cancellationToken);
                 return result.State == DeadLetterResolutionState.Resolved
                     ? Results.Ok(new DiscardDeadOutboxResponse(id, result.At, actorId, request.Note.Trim()))
@@ -237,8 +263,23 @@ public static class PlatformApiRegistration
     /// <summary>404 for an unknown id, 409 when the row is no longer <c>open</c> (second replay).</summary>
     private static IResult MutationFailure(DeadLetterMutationResult result) =>
         result.State == DeadLetterResolutionState.NotFound
-            ? Results.NotFound(new { code = "platform.dead_message_not_found" })
-            : Results.Conflict(new { code = "dead_letter_resolved" });
+            ? PlatformApiResults.FromError(Construction.Kernel.Error.NotFound(
+                PlatformErrorCodes.DeadMessageNotFound,
+                PlatformErrorCodes.English(PlatformErrorCodes.DeadMessageNotFound)))
+            : PlatformApiResults.FromError(Construction.Kernel.Error.Conflict(
+                PlatformErrorCodes.DeadLetterResolved,
+                PlatformErrorCodes.English(PlatformErrorCodes.DeadLetterResolved)));
+
+    private static readonly string[] FinancialEventPrefixes =
+        ["cost.", "cash.", "procurement.payment", "contracts."];
+
+    private static bool IsFinancialEvent(string eventType) =>
+        FinancialEventPrefixes.Any(prefix =>
+            eventType.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsPlatformOperator(ClaimsPrincipal principal) =>
+        principal.HasClaim("permission", "platform.outbox.operator")
+        || principal.HasClaim(ClaimTypes.Role, "platform_operator");
 
     private static bool IsValidNote(string? value) =>
         !string.IsNullOrWhiteSpace(value) && value.Trim().Length <= MaxNoteLength;

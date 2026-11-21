@@ -16,6 +16,7 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddSingleton<IClock, SystemClock>();
         services.AddScoped<AuditSaveChangesInterceptor>();
         services.AddScoped<TenantSessionInterceptor>();
+        services.AddScoped<TenantTransactionInterceptor>();
         return services;
     }
 }

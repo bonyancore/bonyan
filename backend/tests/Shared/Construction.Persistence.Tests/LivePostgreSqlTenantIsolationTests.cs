@@ -42,8 +42,18 @@ public sealed class LivePostgreSqlFixture : IAsyncLifetime
 
     private const string TestTable = "test_live_tenancy_records";
 
+    // Never touch the database when the live tests are opted out; connecting here would fail
+    // the whole run even though every test was skipped.
+    private static bool Enabled => string.Equals(
+        Environment.GetEnvironmentVariable("LIVE_PG_ENABLED"), "true", StringComparison.OrdinalIgnoreCase);
+
     public async Task InitializeAsync()
     {
+        if (!Enabled)
+        {
+            return;
+        }
+
         await using var conn = new NpgsqlConnection(AdminConnectionString);
         await conn.OpenAsync();
 
@@ -72,6 +82,11 @@ public sealed class LivePostgreSqlFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
+        if (!Enabled)
+        {
+            return;
+        }
+
         await using var conn = new NpgsqlConnection(AdminConnectionString);
         await conn.OpenAsync();
 

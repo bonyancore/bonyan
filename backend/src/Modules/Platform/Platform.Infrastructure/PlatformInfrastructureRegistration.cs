@@ -33,6 +33,8 @@ public static class PlatformInfrastructureRegistration
 
         // One implementation backs both the dead-letter admin endpoints and the lag metric, so the
         // tenant-scoped RLS transaction is written once.
+        services.AddScoped<Construction.Platform.Core.Application.Audit.IAuditLog,
+            Construction.Platform.Infrastructure.Audit.PostgresAuditLog>();
         services.AddScoped<DeadLetterService>();
         services.AddScoped<IDeadLetterStore>(sp => sp.GetRequiredService<DeadLetterService>());
         services.AddScoped<IOutboxMetricsStore>(sp => sp.GetRequiredService<DeadLetterService>());
@@ -46,7 +48,8 @@ public static class PlatformInfrastructureRegistration
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(
                 sp.GetRequiredService<AuditSaveChangesInterceptor>(),
-                sp.GetRequiredService<TenantSessionInterceptor>()));
+                sp.GetRequiredService<TenantSessionInterceptor>(),
+                sp.GetRequiredService<TenantTransactionInterceptor>()));
 
         // Transactional outbox writer shares the module DbContext / caller transaction.
         services.AddScoped<IOutbox>(sp => new EfOutboxWriter(

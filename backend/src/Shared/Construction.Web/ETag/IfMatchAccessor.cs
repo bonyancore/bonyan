@@ -99,6 +99,8 @@ public static class PreconditionGuard
             Type = "https://construction.example.com/errors/precondition-failed",
             Detail = "The resource current version does not match the supplied If-Match precondition."
         };
+        // Kept for backward compatibility with the existing concurrency contract/tests. New platform
+        // endpoints use the platform.precondition_* codes exposed by RequireIfMatch.
         problem.Extensions["code"] = "concurrency.precondition_failed";
         problem.Extensions["currentVersion"] = currentEtag;
 
@@ -135,23 +137,36 @@ public static class IfMatchEndpointFilterExtensions
 
             if (condition.IsMissing)
             {
-                return Results.Problem(
-                    detail: "The If-Match header is required for this operation.",
-                    statusCode: StatusCodes.Status428PreconditionRequired,
-                    title: "Precondition Required",
-                    type: PreconditionRequiredType);
+                return Problem(
+                    StatusCodes.Status428PreconditionRequired,
+                    "platform.precondition_required",
+                    "The If-Match header is required for this operation.",
+                    PreconditionRequiredType);
             }
 
             if (condition.IsMalformed)
             {
-                return Results.Problem(
-                    detail: condition.MalformedReason ?? "Malformed If-Match header value.",
-                    statusCode: StatusCodes.Status400BadRequest,
-                    title: "Bad Request",
-                    type: BadRequestType);
+                return Problem(
+                    StatusCodes.Status400BadRequest,
+                    "platform.precondition_failed",
+                    condition.MalformedReason ?? "Malformed If-Match header value.",
+                    BadRequestType);
             }
 
             return await next(ctx);
+        }
+
+        private static IResult Problem(int status, string code, string detail, string type)
+        {
+            var problem = new Microsoft.AspNetCore.Mvc.ProblemDetails
+            {
+                Status = status,
+                Title = code,
+                Detail = detail,
+                Type = type
+            };
+            problem.Extensions["code"] = code;
+            return Results.Problem(problem);
         }
     }
 }
