@@ -36,6 +36,8 @@ public static class PlatformInfrastructureRegistration
         services.AddScoped<Construction.Platform.Core.Application.Audit.IAuditLog,
             Construction.Platform.Infrastructure.Audit.PostgresAuditLog>();
         services.AddScoped<DeadLetterService>();
+        services.AddScoped<Construction.Web.Idempotency.IIdempotencyStore,
+            Construction.Platform.Infrastructure.Idempotency.PostgresIdempotencyStore>();
         services.AddScoped<IDeadLetterStore>(sp => sp.GetRequiredService<DeadLetterService>());
         services.AddScoped<IOutboxMetricsStore>(sp => sp.GetRequiredService<DeadLetterService>());
 
@@ -85,6 +87,7 @@ public static class PlatformInfrastructureRegistration
         services.AddSingleton<ITenantJobEnablement>(
             _ => new DictionaryTenantJobEnablement());
         services.AddSingleton<IJob, PlatformHeartbeatJob>();
+        services.AddSingleton<IJob, IdempotencyPurgeJob>();
 
         services.AddSingleton<IOutboxConsumerRegistry, CompositeOutboxConsumerRegistry>();
         services.AddSingleton<IOutboxRepository>(sp =>
