@@ -52,6 +52,15 @@ if (builder.Environment.IsDevelopment())
     builder.Services.RemoveAll<Construction.Web.Idempotency.IIdempotencyStore>();
     builder.Services.AddSingleton<Construction.Web.Idempotency.IIdempotencyStore,
         Construction.Web.Idempotency.InMemoryIdempotencyStore>();
+
+    // Development-only file/notification adapters: no provider credentials exist locally, and the
+    // production defaults stay fail-closed.
+    builder.Services.RemoveAll<Construction.Platform.Core.Application.Files.IObjectStorage>();
+    builder.Services.AddSingleton<Construction.Platform.Core.Application.Files.IObjectStorage,
+        Construction.Platform.Infrastructure.Files.InMemoryObjectStorage>();
+    builder.Services.RemoveAll<Construction.Platform.Core.Application.Files.IFileAccessChecker>();
+    builder.Services.AddSingleton<Construction.Platform.Core.Application.Files.IFileAccessChecker,
+        Construction.Platform.Infrastructure.Files.FakeFileAccessChecker>();
 }
 
 // OpenAPI configuration

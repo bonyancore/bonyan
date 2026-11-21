@@ -33,6 +33,17 @@ public static class PlatformInfrastructureRegistration
 
         // One implementation backs both the dead-letter admin endpoints and the lag metric, so the
         // tenant-scoped RLS transaction is written once.
+        // PLT-207: fail-closed provider-neutral adapters. Program.cs swaps the in-memory storage and
+        // fake access checker only in Development.
+        services.TryAddSingleton<Construction.Platform.Core.Application.Files.IObjectStorage,
+            Construction.Platform.Infrastructure.Files.UnavailableObjectStorage>();
+        services.TryAddSingleton<Construction.Platform.Core.Application.Files.IFileScanner,
+            Construction.Platform.Infrastructure.Files.UnavailableFileScanner>();
+        services.TryAddSingleton<Construction.Platform.Core.Application.Files.IFileAccessChecker,
+            Construction.Platform.Infrastructure.Files.DenyAllFileAccessChecker>();
+        services.AddScoped<Construction.Platform.Core.Application.Files.IFileService,
+            Construction.Platform.Infrastructure.Files.PostgresFileService>();
+
         services.AddScoped<Construction.Platform.Core.Application.Audit.IAuditLog,
             Construction.Platform.Infrastructure.Audit.PostgresAuditLog>();
         services.AddScoped<DeadLetterService>();

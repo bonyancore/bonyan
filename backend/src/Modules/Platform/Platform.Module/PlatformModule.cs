@@ -18,7 +18,11 @@ public sealed class PlatformModule : IModule
         new("platform.tenant.update", "Update tenant settings"),
         new("platform.outbox.view", "View dead-lettered outbox messages"),
         new("platform.outbox.manage", "Replay or discard dead-lettered outbox messages"),
-        new("platform.outbox.operator", "Replay or discard financial dead letters")
+        new("platform.outbox.operator", "Replay or discard financial dead letters"),
+        new("platform.file.upload", "Create upload sessions and complete uploads"),
+        new("platform.file.view", "View and download files"),
+        new("platform.file.link", "Link files to business records"),
+        new("platform.file.delete", "Delete files")
     ];
 
     public IReadOnlyCollection<MigrationInfo> Migrations =>
