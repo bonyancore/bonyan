@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using Construction.Kernel.Tenancy;
 using Construction.Platform.Contracts;
 using Construction.Platform.Core.Application.Outbox;
+using Construction.Web.Idempotency;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;

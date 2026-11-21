@@ -23,7 +23,7 @@ builder.Services.AddSingleton<ITenantSetter>(sp => sp.GetRequiredService<AsyncLo
 builder.Services.AddSingleton<MessagingTestProbe>();
 builder.Services.AddScoped<TestConsumer>();
 
-builder.Services.AddWebInfrastructure();
+builder.Services.AddWebInfrastructure(builder.Configuration);
 builder.Services.AddAppModules(builder.Configuration);
 
 // Authorization-protected endpoints need a scheme to challenge with; without one every
@@ -47,6 +47,11 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddSingleton<InMemoryDeadLetterStore>();
     builder.Services.AddSingleton<IDeadLetterStore>(sp => sp.GetRequiredService<InMemoryDeadLetterStore>());
     builder.Services.AddSingleton<IOutboxMetricsStore>(sp => sp.GetRequiredService<InMemoryDeadLetterStore>());
+
+    // Same Development-only rule for the idempotency store (PLT-205).
+    builder.Services.RemoveAll<Construction.Web.Idempotency.IIdempotencyStore>();
+    builder.Services.AddSingleton<Construction.Web.Idempotency.IIdempotencyStore,
+        Construction.Web.Idempotency.InMemoryIdempotencyStore>();
 }
 
 // OpenAPI configuration
@@ -73,6 +78,10 @@ app.UseWebExceptionHandler();
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
+
+// PLT-205: idempotency runs after authorization so a replay is re-authorised, and after the rate
+// limiter so duplicate floods are throttled before they touch the key store.
+app.UseMiddleware<Construction.Web.Idempotency.IdempotencyMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
