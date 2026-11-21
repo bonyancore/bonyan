@@ -18,7 +18,9 @@ public sealed class PlatformModule : IModule
         new("platform.tenant.update", "Update tenant settings"),
         new("platform.outbox.view", "View dead-lettered outbox messages"),
         new("platform.outbox.manage", "Replay or discard dead-lettered outbox messages"),
-        new("platform.outbox.operator", "Replay or discard financial dead letters")
+        new("platform.outbox.operator", "Replay or discard financial dead letters"),
+        new("platform.notification.view", "View own inbox and preferences"),
+        new("platform.notification.manage", "Manage notification templates")
     ];
 
     public IReadOnlyCollection<MigrationInfo> Migrations =>
