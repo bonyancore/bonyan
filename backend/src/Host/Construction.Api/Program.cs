@@ -52,6 +52,12 @@ if (builder.Environment.IsDevelopment())
     builder.Services.RemoveAll<Construction.Web.Idempotency.IIdempotencyStore>();
     builder.Services.AddSingleton<Construction.Web.Idempotency.IIdempotencyStore,
         Construction.Web.Idempotency.InMemoryIdempotencyStore>();
+
+    // Development-only file/notification adapters: no provider credentials exist locally, and the
+    // production defaults stay fail-closed.
+    builder.Services.RemoveAll<Construction.Platform.Core.Application.Approvals.IApproverDirectory>();
+    builder.Services.AddScoped<Construction.Platform.Core.Application.Approvals.IApproverDirectory,
+        Construction.Platform.Infrastructure.Approvals.FakeApproverDirectory>();
 }
 
 // OpenAPI configuration

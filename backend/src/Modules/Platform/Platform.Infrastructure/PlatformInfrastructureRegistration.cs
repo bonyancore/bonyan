@@ -33,6 +33,9 @@ public static class PlatformInfrastructureRegistration
 
         // One implementation backs both the dead-letter admin endpoints and the lag metric, so the
         // tenant-scoped RLS transaction is written once.
+        services.AddScoped<Construction.Platform.Core.Application.Approvals.IApprovalService,
+            Construction.Platform.Infrastructure.Approvals.PostgresApprovalService>();
+
         services.AddScoped<Construction.Platform.Core.Application.Audit.IAuditLog,
             Construction.Platform.Infrastructure.Audit.PostgresAuditLog>();
         services.AddScoped<DeadLetterService>();
