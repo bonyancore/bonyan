@@ -286,3 +286,28 @@ when the authentication ticket lands; it is Development-only and refuses to auth
 | 2026-10-30 | PLT-203 worker host, job runner, job_runs migration, 7 unit tests | PLT-203 implementation |
 | 2026-10-31 | Audit of the above: found no PostgreSQL, no spec 00, no PLT-203 acceptance package, in-memory production wiring; re-statused PLT-202/203; added PLT-204 unit tests, RFC 0001, audit scenarios, permission fix; committed 203 and 204-wip | BLOCKED — awaiting environment + specs |
 | 2026-11-01 | Finished the in-flight Postgres job wiring (run store, advisory lock, `run_key`/`trigger`, `CronSchedule`, 16 schedule tests) and the dead-letter resolution model (`error_class`, `resolution`, discard endpoint, lag endpoint, 11 contract tests); fixed the RLS-blind `JobRunStore.GetAsync`; 76/76 green, still **zero PostgreSQL proofs** | BLOCKED — awaiting environment + specs |
+
+## 10. PLT-205 → PLT-209 execution (2026-11-21)
+
+Full detail: `docs/team/PLT-204-209-EXECUTION-REPORT.md`.
+
+| Ticket | Status | Evidence | Blocker |
+|---|---|---|---|
+| PLT-204 retries/DLQ/replay | `IMPLEMENTED — TESTS NOT VERIFIED` | 211 fast unit tests green, 8 Postgres tests skipped | no `D2_TEST_PG`; R-204-01 deferred by decision (§8 #3) |
+| PLT-205 Idempotency-Key | `IMPLEMENTED — TESTS PASS` (unit) | 20 idempotency tests + 130 Web tests green | Postgres claim concurrency unproven |
+| PLT-206 number series | `IMPLEMENTED — TESTS PASS` (unit) | `NumberSeriesRulesTests` green | allocation concurrency unproven |
+| PLT-207 files | `IMPLEMENTED — TESTS NOT VERIFIED` | `FilePolicyTests` green; fail-closed adapters | no object storage / scanner configured |
+| PLT-208 approvals | `IMPLEMENTED — TESTS PASS` (unit) | `ApprovalPolicyMatcherTests` green | approver directory is a port + dev fake |
+| PLT-209 notifications | `IMPLEMENTED — TESTS PASS` (unit) | `NotificationRulesTests` green | email is at-least-once; no provider |
+
+Cross-cutting: `platform.` error-code prefix + ar/en catalogue (CC-04), transaction-local tenant GUC (CC-01), `platform.audit_log` writer (CC-05), RFC 9457 mapping for 400/412/428.
+Build: `dotnet build backend/Construction.sln -warnaserror` succeeds.
+
+### PLT-204 → PLT-209 full-project QA (2026-11-21)
+
+`docs/team/PLT-204-209-QA-REPORT.md` · branch/PR split: `docs/team/PLT-204-209-BRANCH-PLAN.md`
+
+- Release build of `backend/Construction.sln` with `-warnaserror`: succeeded.
+- All 6 existing test projects (Release): **477 passed, 0 failed, 48 skipped** (8 `D2_TEST_PG`, 8 `LIVE_PG_ENABLED`, 32 Docker).
+- Fixed by the regression: idempotency hash treated `1` and `1.0` as different bodies; `LivePostgreSqlFixture` tried to connect while disabled, failing the run with zero failing tests.
+- Not verifiable here: PostgreSQL/RLS/concurrency, S3 + malware scanner, email provider, Worker host (no test project exists), JS apps (no tests), and the 28 empty module-test folders.

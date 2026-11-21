@@ -24,6 +24,9 @@ public static class ErrorExtensions
             ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
             ErrorType.Forbidden    => StatusCodes.Status403Forbidden,
             ErrorType.RateLimited  => StatusCodes.Status429TooManyRequests,
+            ErrorType.BadRequest   => StatusCodes.Status400BadRequest,
+            ErrorType.PreconditionFailed   => StatusCodes.Status412PreconditionFailed,
+            ErrorType.PreconditionRequired => StatusCodes.Status428PreconditionRequired,
             _                      => StatusCodes.Status500InternalServerError,
         };
 
