@@ -35,9 +35,24 @@ public static class PlatformInfrastructureRegistration
         // tenant-scoped RLS transaction is written once.
         services.AddScoped<Construction.Platform.Core.Application.Approvals.IApprovalService,
             Construction.Platform.Infrastructure.Approvals.PostgresApprovalService>();
+        // PLT-207: fail-closed provider-neutral adapters. Program.cs swaps the in-memory storage and
+        // fake access checker only in Development.
+        services.TryAddSingleton<Construction.Platform.Core.Application.Files.IObjectStorage,
+            Construction.Platform.Infrastructure.Files.UnavailableObjectStorage>();
+        services.TryAddSingleton<Construction.Platform.Core.Application.Files.IFileScanner,
+            Construction.Platform.Infrastructure.Files.UnavailableFileScanner>();
+        services.TryAddSingleton<Construction.Platform.Core.Application.Files.IFileAccessChecker,
+            Construction.Platform.Infrastructure.Files.DenyAllFileAccessChecker>();
+        services.AddScoped<Construction.Platform.Core.Application.Files.IFileService,
+            Construction.Platform.Infrastructure.Files.PostgresFileService>();
 
         services.AddScoped<Construction.Platform.Core.Application.Audit.IAuditLog,
             Construction.Platform.Infrastructure.Audit.PostgresAuditLog>();
+        services.AddScoped<Construction.Platform.Core.Application.NumberSeries.INumberSeriesStore,
+            Construction.Platform.Infrastructure.NumberSeries.PostgresNumberSeriesStore>();
+        services.AddSingleton<Construction.Platform.Core.Application.NumberSeries.INumberAllocator,
+            Construction.Platform.Infrastructure.NumberSeries.PostgresNumberAllocator>();
+
         services.AddScoped<DeadLetterService>();
         services.AddScoped<Construction.Web.Idempotency.IIdempotencyStore,
             Construction.Platform.Infrastructure.Idempotency.PostgresIdempotencyStore>();
