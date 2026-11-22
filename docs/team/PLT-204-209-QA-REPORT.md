@@ -203,7 +203,7 @@ backend/tests/Shared/Construction.Web.Tests/Idempotency/IdempotencyDecisionEngin
 backend/tests/Shared/Construction.Web.Tests/Idempotency/InMemoryIdempotencyStoreTests.cs
 ```
 
-### PLT-206 — `feat/plt-206-cost-cash` (implemented as the number-series slice)
+### PLT-206 — `feat/plt-206-number-series` (Platform Number Series)
 
 ```
 backend/src/Modules/Platform/Platform.Core/Domain/NumberSeries/NumberSeriesRules.cs
@@ -219,9 +219,10 @@ backend/tests/Modules/Platform/Platform.Domain.Tests/NumberSeries/NumberSeriesRu
 *(hunk)* `Platform.Api/PlatformApiRegistration.cs` (`AddNumberSeriesPolicies`, `MapNumberSeriesEndpoints`),
 `Platform.Infrastructure/PlatformInfrastructureRegistration.cs`, `Platform.Module/PlatformModule.cs`.
 
-⚠️ The ticket title says Cost/Cash, but `PLT-204-209-executive-implementation-plan.md` defines PLT-206
-as the number-series/cost-code slice, and no monetary feature exists in the plan. The `Cash` module
-remains an empty scaffold. This mismatch is reported, not papered over.
+Scope: **Platform Number Series** (Platform Foundation / PLT-E8, spec 01 §4.9). Cost Control and Cash
+Flow are separate modules and are not part of PLT-206; the "Cost/Cash" wording in the ticket list does not
+match the reviewed project specification, so this slice claims no monetary behaviour. The `Cash` module
+remains an empty scaffold.
 
 ### PLT-207 — `feat/plt-207-file-services`
 
@@ -345,7 +346,7 @@ gh pr create --base feat/plt-204-retries-dlq-replay --head feat/plt-205-platform
   --title "PLT-205: Idempotency-Key middleware" --body "Depends on PLT-204 (stacked). Retarget to main after PLT-204 merges."
 
 # independent tickets (206–209) target the 205 branch first:
-gh pr create --base feat/plt-205-platform-services --head feat/plt-206-cost-cash      --title "PLT-206: number series"
+gh pr create --base feat/plt-205-platform-services --head feat/plt-206-number-series  --title "PLT-206: Implement Platform Number Series"
 gh pr create --base feat/plt-205-platform-services --head feat/plt-207-file-services  --title "PLT-207: file services"
 gh pr create --base feat/plt-205-platform-services --head feat/plt-208-approval-services --title "PLT-208: approval services"
 gh pr create --base feat/plt-205-platform-services   --head feat/plt-209-notifications --title "PLT-209: notifications"

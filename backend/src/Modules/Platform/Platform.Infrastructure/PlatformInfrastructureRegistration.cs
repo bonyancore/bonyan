@@ -46,6 +46,11 @@ public static class PlatformInfrastructureRegistration
 
         services.AddScoped<Construction.Platform.Core.Application.Audit.IAuditLog,
             Construction.Platform.Infrastructure.Audit.PostgresAuditLog>();
+        services.AddScoped<Construction.Platform.Core.Application.NumberSeries.INumberSeriesStore,
+            Construction.Platform.Infrastructure.NumberSeries.PostgresNumberSeriesStore>();
+        services.AddSingleton<Construction.Platform.Core.Application.NumberSeries.INumberAllocator,
+            Construction.Platform.Infrastructure.NumberSeries.PostgresNumberAllocator>();
+
         services.AddScoped<DeadLetterService>();
         services.AddScoped<Construction.Web.Idempotency.IIdempotencyStore,
             Construction.Platform.Infrastructure.Idempotency.PostgresIdempotencyStore>();
