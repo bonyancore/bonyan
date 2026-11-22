@@ -58,6 +58,15 @@ if (builder.Environment.IsDevelopment())
     builder.Services.RemoveAll<Construction.Platform.Core.Application.Notifications.INotificationRecipientResolver>();
     builder.Services.AddSingleton<Construction.Platform.Core.Application.Notifications.INotificationRecipientResolver,
         Construction.Platform.Infrastructure.Notifications.FakeNotificationRecipientResolver>();
+    builder.Services.RemoveAll<Construction.Platform.Core.Application.Approvals.IApproverDirectory>();
+    builder.Services.AddScoped<Construction.Platform.Core.Application.Approvals.IApproverDirectory,
+        Construction.Platform.Infrastructure.Approvals.FakeApproverDirectory>();
+    builder.Services.RemoveAll<Construction.Platform.Core.Application.Files.IObjectStorage>();
+    builder.Services.AddSingleton<Construction.Platform.Core.Application.Files.IObjectStorage,
+        Construction.Platform.Infrastructure.Files.InMemoryObjectStorage>();
+    builder.Services.RemoveAll<Construction.Platform.Core.Application.Files.IFileAccessChecker>();
+    builder.Services.AddSingleton<Construction.Platform.Core.Application.Files.IFileAccessChecker,
+        Construction.Platform.Infrastructure.Files.FakeFileAccessChecker>();
 }
 
 // OpenAPI configuration

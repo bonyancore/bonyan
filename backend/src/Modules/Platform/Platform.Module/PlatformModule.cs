@@ -21,6 +21,16 @@ public sealed class PlatformModule : IModule
         new("platform.outbox.operator", "Replay or discard financial dead letters"),
         new("platform.notification.view", "View own inbox and preferences"),
         new("platform.notification.manage", "Manage notification templates")
+        new("platform.approval.request", "Create approval requests"),
+        new("platform.approval.view", "View approval instances and policies"),
+        new("platform.approval.decide", "Approve or reject approval steps"),
+        new("platform.approval.manage", "Manage approval policies")
+        new("platform.file.upload", "Create upload sessions and complete uploads"),
+        new("platform.file.view", "View and download files"),
+        new("platform.file.link", "Link files to business records"),
+        new("platform.file.delete", "Delete files")
+        new("platform.number_series.view", "View number series and allocations"),
+        new("platform.number_series.manage", "Update number series")
     ];
 
     public IReadOnlyCollection<MigrationInfo> Migrations =>
