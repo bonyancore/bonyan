@@ -19,6 +19,10 @@ public sealed class PlatformModule : IModule
         new("platform.outbox.view", "View dead-lettered outbox messages"),
         new("platform.outbox.manage", "Replay or discard dead-lettered outbox messages"),
         new("platform.outbox.operator", "Replay or discard financial dead letters"),
+        new("platform.file.upload", "Create upload sessions and complete uploads"),
+        new("platform.file.view", "View and download files"),
+        new("platform.file.link", "Link files to business records"),
+        new("platform.file.delete", "Delete files")
         new("platform.number_series.view", "View number series and allocations"),
         new("platform.number_series.manage", "Update number series")
     ];

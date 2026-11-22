@@ -28,6 +28,7 @@ public static class PlatformApiRegistration
 
     public static IServiceCollection AddPlatformApi(this IServiceCollection services)
     {
+        services.AddFilePolicies();
         services.AddNumberSeriesPolicies();
         services.AddAuthorizationBuilder()
             .AddPolicy(ViewPermission, policy => policy
@@ -239,6 +240,7 @@ public static class PlatformApiRegistration
             .WithSummary("Discard a dead-lettered outbox event")
             .WithDescription("Resolves the dead letter without redelivery. The note is mandatory. Requires platform.outbox.manage.");
 
+        endpoints.MapFileEndpoints();
         endpoints.MapNumberSeriesEndpoints();
 
         endpoints.MapGet("/api/v1/platform/outbox/lag", async (
