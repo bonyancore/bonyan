@@ -19,6 +19,8 @@ public sealed class PlatformModule : IModule
         new("platform.outbox.view", "View dead-lettered outbox messages"),
         new("platform.outbox.manage", "Replay or discard dead-lettered outbox messages"),
         new("platform.outbox.operator", "Replay or discard financial dead letters"),
+        new("platform.notification.view", "View own inbox and preferences"),
+        new("platform.notification.manage", "Manage notification templates")
         new("platform.approval.request", "Create approval requests"),
         new("platform.approval.view", "View approval instances and policies"),
         new("platform.approval.decide", "Approve or reject approval steps"),

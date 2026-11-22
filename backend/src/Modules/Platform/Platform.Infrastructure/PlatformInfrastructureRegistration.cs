@@ -33,6 +33,19 @@ public static class PlatformInfrastructureRegistration
 
         // One implementation backs both the dead-letter admin endpoints and the lag metric, so the
         // tenant-scoped RLS transaction is written once.
+        // PLT-209: provider-neutral email and recipient ports. Program.cs swaps the development
+        // recipient resolver only in Development; the email adapter stays fail-closed until approved.
+        services.TryAddSingleton<Construction.Platform.Core.Application.Notifications.IEmailSender,
+            Construction.Platform.Infrastructure.Notifications.UnavailableEmailSender>();
+        services.TryAddSingleton<Construction.Platform.Core.Application.Notifications.INotificationRecipientResolver,
+            Construction.Platform.Infrastructure.Notifications.UnavailableNotificationRecipientResolver>();
+        services.AddScoped<Construction.Platform.Infrastructure.Notifications.PostgresNotificationService>();
+        services.AddScoped<Construction.Platform.Core.Application.Notifications.INotificationSender>(
+            sp => sp.GetRequiredService<Construction.Platform.Infrastructure.Notifications.PostgresNotificationService>());
+        services.AddScoped<Construction.Platform.Core.Application.Notifications.INotificationReader>(
+            sp => sp.GetRequiredService<Construction.Platform.Infrastructure.Notifications.PostgresNotificationService>());
+        services.AddScoped<Construction.Platform.Core.Application.Notifications.INotificationDispatcher>(
+            sp => sp.GetRequiredService<Construction.Platform.Infrastructure.Notifications.PostgresNotificationService>());
         services.AddScoped<Construction.Platform.Core.Application.Approvals.IApprovalService,
             Construction.Platform.Infrastructure.Approvals.PostgresApprovalService>();
         // PLT-207: fail-closed provider-neutral adapters. Program.cs swaps the in-memory storage and
@@ -106,6 +119,7 @@ public static class PlatformInfrastructureRegistration
             _ => new DictionaryTenantJobEnablement());
         services.AddSingleton<IJob, PlatformHeartbeatJob>();
         services.AddSingleton<IJob, IdempotencyPurgeJob>();
+        services.AddSingleton<IJob, NotificationDispatchJob>();
 
         services.AddSingleton<IOutboxConsumerRegistry, CompositeOutboxConsumerRegistry>();
         services.AddSingleton<IOutboxRepository>(sp =>
