@@ -82,7 +82,7 @@ backend/tests/Shared/Construction.Web.Tests/Idempotency/IdempotencyDecisionEngin
 backend/tests/Shared/Construction.Web.Tests/Idempotency/InMemoryIdempotencyStoreTests.cs
 ```
 
-### feat/plt-206-cost-cash (base: `feat/plt-205-platform-services`)
+### feat/plt-206-number-series (base: `feat/plt-205-platform-services`)
 
 ```
 backend/src/Modules/Platform/Platform.Core/Domain/NumberSeries/NumberSeriesRules.cs
@@ -99,9 +99,9 @@ backend/src/Modules/Platform/Platform.Infrastructure/PlatformInfrastructureRegis
 backend/src/Modules/Platform/Platform.Module/PlatformModule.cs                      (hunk: permissions)
 ```
 
-> Ticket title vs plan: the executive plan defines PLT-206 as the number-series slice. No Cost/Cash
-> monetary feature exists in the plan; the `Cash` module is an empty scaffold. This mismatch is a
-> business decision, reported rather than invented.
+> Scope: **Platform Number Series** (Platform Foundation / PLT-E8, spec 01 §4.9). Cost Control and
+> Cash Flow are separate modules and are not part of PLT-206; the "Cost/Cash" wording in the ticket list
+> does not match the reviewed project specification. No monetary feature is implemented or claimed.
 
 ### feat/plt-207-file-services (base: `feat/plt-205-platform-services`)
 
@@ -202,7 +202,7 @@ git commit -m "feat(platform): PLT-205 Idempotency-Key middleware and store"
 git push -u origin feat/plt-205-platform-services
 
 # ---- PLT-206 … PLT-209: same pattern, each branched from feat/plt-205-platform-services ----
-#   git switch -c feat/plt-206-cost-cash feat/plt-205-platform-services
+#   git switch -c feat/plt-206-number-series feat/plt-205-platform-services
 #   git switch -c feat/plt-207-file-services feat/plt-205-platform-services
 #   git switch -c feat/plt-208-approval-services feat/plt-205-platform-services
 #   git switch -c feat/plt-209-notifications feat/plt-205-platform-services
@@ -216,7 +216,7 @@ gh pr create --base feat/plt-204-retries-dlq-replay --head feat/plt-205-platform
   --title "PLT-205: Idempotency-Key middleware" \
   --body "Stacked on PLT-204. Retarget to main once PLT-204 merges."
 
-gh pr create --base feat/plt-205-platform-services --head feat/plt-206-cost-cash        --title "PLT-206: number series"
+gh pr create --base feat/plt-205-platform-services --head feat/plt-206-number-series    --title "PLT-206: Implement Platform Number Series"
 gh pr create --base feat/plt-205-platform-services --head feat/plt-207-file-services     --title "PLT-207: file services"
 gh pr create --base feat/plt-205-platform-services --head feat/plt-208-approval-services --title "PLT-208: approval services"
 gh pr create --base feat/plt-205-platform-services --head feat/plt-209-notifications     --title "PLT-209: notifications"
