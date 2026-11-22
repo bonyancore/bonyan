@@ -28,6 +28,7 @@ public static class PlatformApiRegistration
 
     public static IServiceCollection AddPlatformApi(this IServiceCollection services)
     {
+        services.AddApprovalPolicies();
         services.AddFilePolicies();
         services.AddNumberSeriesPolicies();
         services.AddAuthorizationBuilder()
@@ -240,6 +241,7 @@ public static class PlatformApiRegistration
             .WithSummary("Discard a dead-lettered outbox event")
             .WithDescription("Resolves the dead letter without redelivery. The note is mandatory. Requires platform.outbox.manage.");
 
+        endpoints.MapApprovalEndpoints();
         endpoints.MapFileEndpoints();
         endpoints.MapNumberSeriesEndpoints();
 

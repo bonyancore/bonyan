@@ -33,6 +33,8 @@ public static class PlatformInfrastructureRegistration
 
         // One implementation backs both the dead-letter admin endpoints and the lag metric, so the
         // tenant-scoped RLS transaction is written once.
+        services.AddScoped<Construction.Platform.Core.Application.Approvals.IApprovalService,
+            Construction.Platform.Infrastructure.Approvals.PostgresApprovalService>();
         // PLT-207: fail-closed provider-neutral adapters. Program.cs swaps the in-memory storage and
         // fake access checker only in Development.
         services.TryAddSingleton<Construction.Platform.Core.Application.Files.IObjectStorage,

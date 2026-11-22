@@ -55,6 +55,9 @@ if (builder.Environment.IsDevelopment())
 
     // Development-only file/notification adapters: no provider credentials exist locally, and the
     // production defaults stay fail-closed.
+    builder.Services.RemoveAll<Construction.Platform.Core.Application.Approvals.IApproverDirectory>();
+    builder.Services.AddScoped<Construction.Platform.Core.Application.Approvals.IApproverDirectory,
+        Construction.Platform.Infrastructure.Approvals.FakeApproverDirectory>();
     builder.Services.RemoveAll<Construction.Platform.Core.Application.Files.IObjectStorage>();
     builder.Services.AddSingleton<Construction.Platform.Core.Application.Files.IObjectStorage,
         Construction.Platform.Infrastructure.Files.InMemoryObjectStorage>();
