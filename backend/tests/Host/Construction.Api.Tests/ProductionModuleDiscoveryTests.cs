@@ -111,9 +111,11 @@ public class ProductionModuleDiscoveryTests
         Assert.Contains(typeof(PlatformDbContext), result.DeclaredDbContextTypes);
         Assert.Contains(typeof(PlatformDbContext), result.ResolvedDbContextTypes);
 
-        // 3. Explicitly assert the production baseline contains 0 tenant-scoped tables
+        // 3. Platform tenant-scoped tables: platform.users and platform.refresh_tokens (PLT-106)
         // (Platform.Core.Domain.Tenancy.Tenant is the root company aggregate and is exempt)
-        Assert.Empty(result.DiscoveredTenantScopedTables);
+        Assert.Equal(2, result.DiscoveredTenantScopedTables.Count);
+        Assert.Contains(("platform", "users"), result.DiscoveredTenantScopedTables);
+        Assert.Contains(("platform", "refresh_tokens"), result.DiscoveredTenantScopedTables);
     }
 }
 

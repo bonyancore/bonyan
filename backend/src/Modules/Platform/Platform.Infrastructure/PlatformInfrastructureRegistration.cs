@@ -1,3 +1,4 @@
+
 using System.Data.Common;
 using Construction.Kernel;
 using Construction.Kernel.Tenancy;
@@ -14,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Npgsql;
 
 namespace Construction.Platform.Infrastructure;
@@ -30,6 +32,46 @@ public static class PlatformInfrastructureRegistration
         // dead-letter admin service and the outbox dispatcher both resolve it on the API path; the
         // Worker path (AddPlatformWorkerJobs) adds the same service, so TryAdd keeps one descriptor.
         services.TryAddSingleton<IClock>(_ => new SystemClock(TimeProvider.System));
+
+        // PLT-106 Identity & Authentication configuration and services
+        services.AddOptions<Identity.IdentityOptions>()
+            .Bind(config.GetSection(Identity.IdentityOptions.SectionName))
+            .PostConfigure<Microsoft.Extensions.Hosting.IHostEnvironment>((options, env) =>
+            {
+                if (env.IsDevelopment() && string.IsNullOrWhiteSpace(options.JwtSigningKey))
+                {
+                    options.JwtSigningKey = Identity.IdentityOptions.DevelopmentDefaultSigningKey;
+                }
+            })
+            .Validate<Microsoft.Extensions.Hosting.IHostEnvironment>((options, env) =>
+            {
+                if (env.IsDevelopment())
+                {
+                    return true;
+                }
+
+                if (string.IsNullOrWhiteSpace(options.JwtSigningKey))
+                {
+                    return false;
+                }
+
+                if (string.Equals(options.JwtSigningKey, Identity.IdentityOptions.DevelopmentDefaultSigningKey, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+
+                if (System.Text.Encoding.UTF8.GetByteCount(options.JwtSigningKey) < 32)
+                {
+                    return false;
+                }
+
+                return true;
+            }, "Identity:JwtSigningKey must be configured in non-Development environments (min 256 bits) and cannot use the development fallback.")
+            .ValidateOnStart();
+
+        services.AddScoped<Construction.Platform.Core.Domain.Identity.IPasswordHasher, Identity.Argon2idPasswordHasher>();
+        services.AddScoped<Construction.Platform.Core.Domain.Identity.ITokenService, Identity.JwtTokenService>();
+        services.AddScoped<Construction.Platform.Core.Domain.Identity.IIdentityService, Identity.IdentityService>();
 
         // One implementation backs both the dead-letter admin endpoints and the lag metric, so the
         // tenant-scoped RLS transaction is written once.
