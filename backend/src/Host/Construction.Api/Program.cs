@@ -26,13 +26,36 @@ builder.Services.AddScoped<TestConsumer>();
 builder.Services.AddWebInfrastructure(builder.Configuration);
 builder.Services.AddAppModules(builder.Configuration);
 
-// Authorization-protected endpoints need a scheme to challenge with; without one every
-// RequireAuthorization endpoint throws instead of returning 401/403. The handler only authenticates
-// in Development and fails closed otherwise until the real bearer scheme (auth ticket) lands.
-builder.Services.AddAuthentication(DevHeaderAuthenticationHandler.SchemeName)
+// PLT-106: Authentication & JWT Bearer configuration. In Development, falls back to DevHeaderAuthenticationHandler if bearer token is missing.
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer()
     .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, DevHeaderAuthenticationHandler>(
         DevHeaderAuthenticationHandler.SchemeName,
         _ => { });
+
+builder.Services.AddOptions<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions>(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
+    .Configure<Microsoft.Extensions.Options.IOptions<Construction.Platform.Infrastructure.Identity.IdentityOptions>, Microsoft.Extensions.Hosting.IHostEnvironment>(
+        (jwtOptions, identityOptionsAccessor, env) =>
+        {
+            var identityOptions = identityOptionsAccessor.Value;
+            jwtOptions.RequireHttpsMetadata = !env.IsDevelopment();
+            jwtOptions.SaveToken = true;
+            jwtOptions.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(identityOptions.JwtSigningKey)),
+                ValidateIssuer = !string.IsNullOrWhiteSpace(identityOptions.Issuer),
+                ValidIssuer = identityOptions.Issuer,
+                ValidateAudience = !string.IsNullOrWhiteSpace(identityOptions.Audience),
+                ValidAudience = identityOptions.Audience,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+        });
 
 // Use InMemory store only in Development
 if (builder.Environment.IsDevelopment())
@@ -77,6 +100,7 @@ app.UseWebExceptionHandler();
 // Limiting before authorization also rejects an abusive caller before permission checks run.
 app.UseAuthentication();
 app.UseRateLimiter();
+app.UseMiddleware<Construction.Platform.Infrastructure.Middleware.TenantSuspensionMiddleware>();
 app.UseAuthorization();
 
 // PLT-205: idempotency runs after authorization so a replay is re-authorised, and after the rate

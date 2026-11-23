@@ -21,6 +21,7 @@ namespace Construction.Platform.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Construction.Persistence.OutboxMessage", b =>
@@ -117,6 +118,293 @@ namespace Construction.Platform.Infrastructure.Persistence.Migrations
                         .HasFilter("dispatched_at IS NULL AND dead_at IS NULL");
 
                     b.ToTable("outbox", "platform");
+                });
+
+            modelBuilder.Entity("Construction.Platform.Core.Domain.Identity.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ClientKind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("client_kind");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DeviceLabel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("device_label");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("Ip")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)")
+                        .HasColumnName("ip");
+
+                    b.Property<DateTimeOffset>("IssuedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issued_at");
+
+                    b.Property<string>("RevokeReason")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("revoke_reason");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<DateTimeOffset?>("RotatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rotated_at");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("user_agent");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_refresh_tokens");
+
+                    b.HasIndex("FamilyId")
+                        .HasDatabaseName("ix_refresh_tokens_family_id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_refresh_tokens_token_hash");
+
+                    b.HasIndex("TenantId", "FamilyId")
+                        .HasDatabaseName("ix_refresh_tokens_tenant_id_family_id");
+
+                    b.HasIndex("TenantId", "UserId")
+                        .HasDatabaseName("ix_refresh_tokens_tenant_id_user_id");
+
+                    b.HasIndex("UserId", "RevokedAt")
+                        .HasDatabaseName("ix_refresh_tokens_user_id_revoked_at");
+
+                    b.ToTable("refresh_tokens", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_refresh_tokens_client_kind", "client_kind IN ('web', 'mobile', 'api')");
+
+                            t.HasCheckConstraint("ck_refresh_tokens_revoke_reason", "revoke_reason IS NULL OR revoke_reason IN ('logout', 'reuse_detected', 'admin', 'password_changed', 'deactivated')");
+                        });
+                });
+
+            modelBuilder.Entity("Construction.Platform.Core.Domain.Identity.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AvatarFileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("avatar_file_id");
+
+                    b.Property<string>("CalendarPref")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("gregorian")
+                        .HasColumnName("calendar_pref");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeactivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at");
+
+                    b.Property<Guid?>("DeactivatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deactivated_by");
+
+                    b.Property<string>("DeactivationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("deactivation_reason");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("citext")
+                        .HasColumnName("email");
+
+                    b.Property<int>("FailedLoginCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("failed_login_count");
+
+                    b.Property<DateTimeOffset?>("FailedLoginWindowStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("failed_login_window_started_at");
+
+                    b.Property<string>("FullNameAr")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("full_name_ar");
+
+                    b.Property<string>("FullNameEn")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("full_name_en");
+
+                    b.Property<string>("JobTitle")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("job_title");
+
+                    b.Property<DateTimeOffset?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_login_at");
+
+                    b.Property<string>("Locale")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasDefaultValue("ar")
+                        .HasColumnName("locale");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
+
+                    b.Property<Guid?>("ManagerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("manager_user_id");
+
+                    b.Property<bool>("MfaEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("mfa_enabled");
+
+                    b.Property<string>("MfaRecoveryHashes")
+                        .HasColumnType("text")
+                        .HasColumnName("mfa_recovery_hashes");
+
+                    b.Property<byte[]>("MfaSecretEnc")
+                        .HasColumnType("bytea")
+                        .HasColumnName("mfa_secret_enc");
+
+                    b.Property<string>("Numerals")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("latin")
+                        .HasColumnName("numerals");
+
+                    b.Property<DateTimeOffset?>("PasswordChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_changed_at");
+
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("phone");
+
+                    b.Property<Guid?>("SignatureFileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("signature_file_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TimeZone")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("time_zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_users");
+
+                    b.HasAlternateKey("TenantId", "Id")
+                        .HasName("ak_users_tenant_id_id");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_email");
+
+                    b.HasIndex("TenantId", "Id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_tenant_id_id");
+
+                    b.HasIndex("TenantId", "ManagerUserId")
+                        .HasDatabaseName("ix_users_tenant_id_manager_user_id");
+
+                    b.HasIndex("TenantId", "Phone")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_tenant_id_phone")
+                        .HasFilter("phone IS NOT NULL");
+
+                    b.HasIndex("TenantId", "Status")
+                        .HasDatabaseName("ix_users_tenant_id_status");
+
+                    b.ToTable("users", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_users_active_password", "status <> 'active' OR password_hash IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_users_failed_login_count", "failed_login_count >= 0");
+
+                            t.HasCheckConstraint("ck_users_status", "status IN ('invited', 'active', 'deactivated', 'locked')");
+                        });
                 });
 
             modelBuilder.Entity("Construction.Platform.Core.Domain.Jobs.JobRun", b =>
@@ -284,6 +572,17 @@ namespace Construction.Platform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_tenants_status", "status in ('provisioning','active','trial','suspended','pending_deletion','deleted')");
                         });
+                });
+
+            modelBuilder.Entity("Construction.Platform.Core.Domain.Identity.RefreshToken", b =>
+                {
+                    b.HasOne("Construction.Platform.Core.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "UserId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_refresh_tokens_users_tenant_id_user_id");
                 });
 #pragma warning restore 612, 618
         }

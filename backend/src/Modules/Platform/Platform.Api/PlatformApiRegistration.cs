@@ -258,6 +258,9 @@ public static class PlatformApiRegistration
             .WithSummary("Outbox lag for the current tenant")
             .WithDescription("Returns lagSeconds and pendingCount. Requires platform.outbox.view.");
 
+        // Spec 01 §7.2: Platform authentication and session endpoints
+        Endpoints.AuthEndpoints.MapAuthEndpoints(endpoints);
+
         return endpoints;
     }
 
