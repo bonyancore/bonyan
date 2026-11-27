@@ -51,4 +51,13 @@ public sealed class ProjectTransitionsTests
             Assert.Equal(expected, ProjectTransitions.CanTransition(ProjectStatus.Closed, to));
         }
     }
+
+    [Fact]
+    public void SameStatus_IsNotATransition()
+    {
+        foreach (var status in Enum.GetValues<ProjectStatus>())
+        {
+            Assert.False(ProjectTransitions.CanTransition(status, status));
+        }
+    }
 }
