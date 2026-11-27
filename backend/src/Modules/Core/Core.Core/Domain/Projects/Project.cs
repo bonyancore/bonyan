@@ -31,6 +31,10 @@ public sealed class Project : ITenantScopedEntity, IAuditableEntity
     public string? HoldReason { get; private set; }
     public DateTimeOffset? ActivatedAt { get; private set; }
 
+    public DateOnly? ActualEndDate { get; private set; }
+    public DateTimeOffset? ClosedAt { get; private set; }
+    public string? CloseReason { get; private set; }
+
     // IAuditableEntity
     public DateTime CreatedAt { get; set; }
     public Guid? CreatedBy { get; set; }
@@ -128,6 +132,35 @@ public sealed class Project : ITenantScopedEntity, IAuditableEntity
         EnsureTransition(ProjectStatus.Closing, ProjectStatus.Active);
         Status = ProjectStatus.Closing;
     }
+
+
+    /// <summary>
+    /// closing -> closed (close). The close permission and the close-blocker providers are checked
+    /// by the application layer. The reason is optional (e.g. an override reason, BR-COR-17).
+    /// </summary>
+    public void Close(DateOnly actualEndDate, DateTimeOffset now, string? reason = null)
+    {
+        EnsureTransition(ProjectStatus.Closed, ProjectStatus.Closing);
+        Status = ProjectStatus.Closed;
+        ActualEndDate = actualEndDate;
+        ClosedAt = now;
+        CloseReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+    }
+
+    /// <summary>closed -> closing (reopen). A reason is required; the application layer audits it.</summary>
+    public void Reopen(string reason)
+    {
+        EnsureTransition(ProjectStatus.Closing, ProjectStatus.Closed);
+
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new DomainRuleViolation("core.project_reason_required");
+
+        Status = ProjectStatus.Closing;
+        ActualEndDate = null;
+        ClosedAt = null;
+        CloseReason = null;
+    }
+
 
     /// <summary>draft or setup -> cancelled (cancel). "No usage" is checked by the application layer.</summary>
     public void Cancel()
