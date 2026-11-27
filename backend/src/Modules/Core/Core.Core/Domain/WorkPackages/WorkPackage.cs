@@ -94,6 +94,79 @@ public sealed class WorkPackage : ITenantScopedEntity, IAuditableEntity
         };
     }
 
+
+    /// <summary>planned -> active (activate). "Project not closed/cancelled" is checked by the application layer.</summary>
+    public void Activate()
+    {
+        EnsureTransition(WorkPackageStatus.Active, WorkPackageStatus.Planned);
+        Status = WorkPackageStatus.Active;
+    }
+
+    /// <summary>
+    /// active -> on_hold (hold). A reason is required; the application layer records it in the status history
+    /// (the work package table has no reason column).
+    /// </summary>
+    public void Hold(string reason)
+    {
+        EnsureTransition(WorkPackageStatus.OnHold, WorkPackageStatus.Active);
+
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new DomainRuleViolation("core.work_package_reason_required");
+
+        Status = WorkPackageStatus.OnHold;
+    }
+
+    /// <summary>on_hold -> active (resume).</summary>
+    public void Resume()
+    {
+        EnsureTransition(WorkPackageStatus.Active, WorkPackageStatus.OnHold);
+        Status = WorkPackageStatus.Active;
+    }
+
+    /// <summary>
+    /// active -> completed (complete). "No open site or purchase requests" and the below-100% warning
+    /// are handled by the application layer (usage providers).
+    /// </summary>
+    public void Complete()
+    {
+        EnsureTransition(WorkPackageStatus.Completed, WorkPackageStatus.Active);
+        Status = WorkPackageStatus.Completed;
+    }
+
+    /// <summary>completed -> active (reopen). "Project not closed" is checked by the application layer.</summary>
+    public void Reopen()
+    {
+        EnsureTransition(WorkPackageStatus.Active, WorkPackageStatus.Completed);
+        Status = WorkPackageStatus.Active;
+    }
+
+    /// <summary>
+    /// planned, on_hold or completed -> archived (archive). The usage check (BR-COR-22)
+    /// is done by the application layer. Archiving never deletes.
+    /// </summary>
+    public void Archive()
+    {
+        EnsureTransition(
+            WorkPackageStatus.Archived,
+            WorkPackageStatus.Planned, WorkPackageStatus.OnHold, WorkPackageStatus.Completed);
+        Status = WorkPackageStatus.Archived;
+    }
+
+    /// <summary>archived -> planned (unarchive). "Uniqueness slot is free" is checked by the application layer.</summary>
+    public void Unarchive()
+    {
+        EnsureTransition(WorkPackageStatus.Planned, WorkPackageStatus.Archived);
+        Status = WorkPackageStatus.Planned;
+    }
+
+    // The action must start from one of the allowed statuses AND be a legal transition (Spec 02 §5.2).
+    private void EnsureTransition(WorkPackageStatus to, params WorkPackageStatus[] allowedFrom)
+    {
+        if (!allowedFrom.Contains(Status) || !WorkPackageTransitions.CanTransition(Status, to))
+            throw new DomainRuleViolation("core.work_package_invalid_transition");
+    }
+
+
     private static WorkPackageStatus InitialStatusFor(ProjectStatus projectStatus) => projectStatus switch
     {
         ProjectStatus.Active => WorkPackageStatus.Active,
